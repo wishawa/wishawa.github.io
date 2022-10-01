@@ -1,1 +1,0 @@
-# wishawa.github.io
