@@ -11,5 +11,51 @@ highlight_code = true
 # Whether to build a search index to be used later on by a JavaScript library
 build_search_index = false
 
+theme = "DeepThought"
+
+default_language = "en"
+
+generate_feed = true
+feed_filename = "rss.xml"
+
+taxonomies = [
+    { name = "categories", feed = true, paginate_by = 10 },
+    { name = "tags", fees = true, paginate_by = 10 },
+]
+
+[markdown]
+highlight_code = true
+highlight_theme = "one-dark"
+external_links_target_blank = true
+external_links_no_follow = true
+smart_punctuation = false
+
 [extra]
 # Put all your custom variables here
+
+katex.enabled = true
+katex.auto_render = true
+
+chart.enabled = true
+mermaid.enabled = false
+galleria.enabled = false
+
+navbar_items = [
+ { code = "en", nav_items = [
+  { url = "$BASE_URL/", name = "Home" },
+  { url = "$BASE_URL/posts", name = "Posts" },
+  { url = "$BASE_URL/tags", name = "Tags" },
+ ]},
+]
+
+# Author details
+[extra.author]
+name = "Wisha Wanichwecharungruang"
+avatar = "/images/avatar.png"
+
+# Social links
+[extra.social]
+email = "wishawanich@gmail.com"
+github = "wishawa"
+linkedin = "wisha-w"
+stackoverflow = "13736010"
