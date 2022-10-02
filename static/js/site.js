@@ -111,10 +111,10 @@ function makeTeaser(body, terms) {
 function documentReadyCallback() {
 
   if (localStorage.getItem("theme") === "dark") {
-    document.body.setAttribute("theme", "dark");
-    document.querySelectorAll("img, picture, video, pre").forEach(img => img.setAttribute("theme", "dark"));
-    document.querySelectorAll(".vimeo, .youtube, .chart").forEach(video => video.setAttribute("theme", "dark"));
-    document.getElementById("dark-mode").setAttribute("title", "Switch to light theme");
+    document.documentElement.setAttribute("theme", "dark");
+  }
+  else {
+    document.documentElement.setAttribute("theme", "light");
   }
 
 
@@ -141,18 +141,10 @@ function documentReadyCallback() {
       localStorage.getItem("theme") == "light"
     ) {
       localStorage.setItem("theme", "dark");
-      document.body.setAttribute("theme", "dark");
-      document.querySelectorAll("img, picture, video, pre").forEach(img => img.setAttribute("theme", "dark"));
-      document.querySelectorAll(".vimeo, .youtube, .chart").forEach(video => video.setAttribute("theme", "dark"));
-
-      document.getElementById("dark-mode").setAttribute("title", "Switch to light theme");
+      document.documentElement.setAttribute("theme", "dark");
     } else {
       localStorage.setItem("theme", "light");
-      document.body.removeAttribute("theme", "dark");
-      document.querySelectorAll("img, picture, video, pre").forEach(img => img.removeAttribute("theme", "dark"))
-      document.querySelectorAll(".vimeo, .youtube, .chart").forEach(video => video.removeAttribute("theme", "dark"));
-
-      document.getElementById("dark-mode").setAttribute("title", "Switch to dark theme");
+      document.documentElement.setAttribute("theme", "light");
     }
   });
 
