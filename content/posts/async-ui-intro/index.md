@@ -11,7 +11,7 @@ This blog post is intended for readers with some experiences in async Rust. It a
 
 ## What is Async UI?
 
-Async UI is a proof-of-concept Rust UI library with backend for the web (HTML/JS), and GTK 4. It is not ready for production use yet.
+Async UI is a **proof-of-concept** Rust UI library with backend for the web (HTML/JS), and GTK 4.
 
 ## Screenshots
 
@@ -49,7 +49,7 @@ Modern UI programming is all about *composition* — encapsulating many child co
 This is analogous to [joining](https://docs.rs/futures/latest/futures/future/fn.join.html) futures: you join many child futures together to get one future that runs all the children in parallel.
 
 
-In Async UI, this joining is done with *fragments*. A `Fragment` is a future that contains multiple widgets. When you await the Fragment, all the widgets in it are rendered.
+In Async UI, composition/joining is done with *fragments*. A `Fragment` is a future that contains multiple widgets. When you await the Fragment, all the widgets in it are rendered.
 
 ```rust
 async fn hello_world_2() {
@@ -108,9 +108,7 @@ async fn login_flow() {
 ## Bring your own Reactivity
 
 The core of Async UI doesn't know anything about reactivity.
-It's just async Rust! You can use channels ([async-channel](https://crates.io/crates/async-channel) is a great crate).
-You can use signals ([futures-signals](https://crates.io/crates/futures-signals) is a great crate).
-You can use whatever works in async Rust.
+It's just async Rust! To communicate between your components, you can use channels ([async-channel](https://crates.io/crates/async-channel) is a great crate), signals ([futures-signals](https://crates.io/crates/futures-signals) is a great crate), or whatever works in async Rust.
 
 The built-in components for both Web and GTK support reactivity through a simple interface provided by the `observables` crate. The crate provides basic reactivity with: `ReactiveCell<T>`.
 
@@ -140,12 +138,12 @@ async fn counter() {
 }
 ```
 
-For advanced reactivity and state management, I'm not sure what model will fit best with Async UI yet, but I've been experimenting with [X-Bow](https://github.com/wishawa/async_ui/tree/main/x-bow).
+For advanced reactivity and state management, I'm not sure what model will fit best with Async UI yet. [X-Bow](https://crates.io/crates/x-bow) is a state management library I've been experimenting with, and it seems to be working pretty well (I used it in the Todo App demoed above). [Streams](https://docs.rs/futures/latest/futures/stream/trait.Stream.html) and [LendingStreams](https://github.com/rust-lang/wg-async/blob/master/rfc-drafts/stream.md#lending-streams) are also potential solutions.
 
 ## Take Advantage of the Async Ecosystem
 
-Async UI is "just async Rust", so it is very easy to use together with Rust libraries.
-Under the hood, it uses [async-executor](https://crates.io/crates/async-executor) from the smol team. This is **the executor used by async-std**, so anything that works on async-std should be compatible with Async UI. The GTK Hacker News demo you see above, for example, uses async-std's [surf](https://github.com/http-rs/surf) crate to fetch data.
+Async UI is "**just async Rust**", so it is very easy to use together with other Rust libraries.
+Under the hood, Async UI uses [async-executor](https://crates.io/crates/async-executor) from the smol team. This is **the same executor used by async-std**, so anything that works on async-std should be compatible with Async UI. The GTK Hacker News demo you see above, for example, uses async-std's [surf](https://github.com/http-rs/surf) crate to fetch data.
 
 ## End Notes
 
