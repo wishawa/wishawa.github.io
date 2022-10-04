@@ -98,6 +98,26 @@
 {% endif %}
 {% endblock %}
 
+{% block notice %}
+<section class="section pt-0">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8 is-offset-2 mx-4">
+        <article class="box message p-0">
+          <div class="message-header">
+            Advertisement
+          </div>
+          <div class="message-body">
+            I'm looking for summer internships.
+            Please <a href="/">get in touch</a> if you're interested in hiring me!
+          </div>
+        <article>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
 {% block custom_js %}
 {% if page.extra.toc %}
 <script type="text/javascript">
