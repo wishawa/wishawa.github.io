@@ -117,7 +117,7 @@ The built-in components for both Web and GTK support reactivity through a simple
 async fn counter() {
 	let mut count = 0;
 
-	// ReactiveCell is for ReactiveCell! It is like a RefCell that you can subscribe to.
+	// Like a RefCell that you can subscribe to!
 	let count_string = ReactiveCell::new(count.to_string());
 
 	fragment((
@@ -144,7 +144,7 @@ For advanced reactivity and state management, I'm not sure what model will fit b
 ## Take Advantage of the Async Ecosystem
 
 Async UI is "just async Rust", so it is very easy to use together with Rust libraries.
-Under the hood, it uses [async-executor](https://crates.io/crates/async-executor) from the smol team. This is the same executor used by async-std, so anything that works on async-std should be compatible with Async UI. The GTK Hacker News demo you see above, for example, uses async-std's [surf](https://github.com/http-rs/surf) crate to fetch data.
+Under the hood, it uses [async-executor](https://crates.io/crates/async-executor) from the smol team. This is **the executor used by async-std**, so anything that works on async-std should be compatible with Async UI. The GTK Hacker News demo you see above, for example, uses async-std's [surf](https://github.com/http-rs/surf) crate to fetch data.
 
 ## End Notes
 
