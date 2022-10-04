@@ -11,7 +11,7 @@ This blog post is intended for readers with some experiences in async Rust. It a
 
 ## What is Async UI?
 
-Async UI is a **proof-of-concept** Rust UI library with backend for the web (HTML/JS), and GTK 4.
+Async UI is a **proof-of-concept** Rust UI library with backends for the web (HTML/JS) and GTK 4.
 
 ## Screenshots
 
