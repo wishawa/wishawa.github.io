@@ -14,6 +14,7 @@ build_search_index = false
 theme = "DeepThought"
 
 default_language = "en"
+title = "Wisha Wanichwecharungruang"
 
 generate_feed = true
 feed_filename = "rss.xml"
@@ -36,7 +37,7 @@ smart_punctuation = false
 katex.enabled = true
 katex.auto_render = true
 
-chart.enabled = true
+chart.enabled = false
 mermaid.enabled = false
 galleria.enabled = false
 

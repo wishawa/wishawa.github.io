@@ -1,6 +1,6 @@
 +++
 title = "Async UI: a Rust UI Library where Everything is a Future"
-description = "Introduction to Async UI"
+description = "Take advantage of async Rust make building UIs safe and intuitive!"
 date = 2022-10-01
 [taxonomies]
 categories = ["Tech"]
@@ -11,9 +11,9 @@ This blog post is intended for readers with some experiences in async Rust. It a
 
 ## What is Async UI?
 
-Async UI is a proof-of-concept Rust UI library with backend for the web (HTML/JS), and GTK 4.
+Async UI is a proof-of-concept Rust UI library with backend for the web (HTML/JS), and GTK 4. It is not ready for production use yet.
 
-## Demo
+## Screenshots
 
 Todo List Demo [(interactive version here)](https://wishawa.github.io/async_ui/todomvc)
 
@@ -30,8 +30,7 @@ UI widgets are **retained**: they run some code, stay there and wait for some ev
 Sync Rust cannot handle the *stay there and wait for some events* step in a clean way.
 With sync Rust it is almost impossible to express how long a widget would live.
 
-Async Rust alleviates this problem because it allows us to express widgets' lifetimes with Rust lifetimes.
-How? By representing widgets as Futures.
+Async Rust solves this problem: in async functions, lifetimes can span across await points that may pause for however long we want. This allows us to express a widgets lifetimes directly with Rust lifetimes. To do so, we represent components by async functions.
 
 ## Components are Futures
 
@@ -60,11 +59,9 @@ async fn hello_world_2() {
 		hello_world(),
 		// have a button beside it
 		button(ButtonProps {
-			children: Some(
-				fragment((
-					text(&"Say hello back"),
-				))
-			),
+			children: fragment((
+				text(&"Say hello back"),
+			)),
 			on_press: Some(
 				&mut |_ev: PressEvent| {
 					todo!();
@@ -129,9 +126,9 @@ async fn counter() {
 		text(&count_string.as_observable()),
 
 		button(ButtonProps {
-			children: Some(fragment((
+			children: fragment((
 				text(&"+"),
-			))),
+			)),
 			on_press: Some(&mut |_ev| {
 				// Upon press, increment count and update the string accordingly.
 				count += 1;
@@ -143,13 +140,13 @@ async fn counter() {
 }
 ```
 
-For advanced reactivity and state management, I'm not sure what model will fit best with Async UI yet, but I've been experimenting with [X-Bow](TODO ADD LINK).
+For advanced reactivity and state management, I'm not sure what model will fit best with Async UI yet, but I've been experimenting with [X-Bow](https://github.com/wishawa/async_ui/tree/main/x-bow).
 
 ## Take Advantage of the Async Ecosystem
 
 Async UI is "just async Rust", so it is very easy to use together with Rust libraries.
 Under the hood, it uses [async-executor](https://crates.io/crates/async-executor) from the async-std / smol team,
-so anything that works on async-std should be compatible with Async UI.
+so anything that works on async-std should be compatible with Async UI. The GTK Hacker News demo you see above, for example, uses [surf](https://github.com/http-rs/surf) to fetch data.
 
 ## End Notes
 
@@ -157,4 +154,4 @@ Async UI is **still under development**. The core idea is complete, but lots of 
 
 There's a lot more to explain about the workings of the library. I'll post more blog posts soon. Stay tuned!
 
-Also check out [demos](#demo) if you haven't yet.
+[GitHub repo for Async UI](https://github.com/wishawa/async_ui)

@@ -6,24 +6,18 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1" name="viewport" />
-  <meta content="#ffffff" name="theme-color" />
-  <meta content="#da532c" name="msapplication-TileColor" />
 
-  {% if config.extra.favicon.webmanifest %}
-  <link href='{{ config.extra.favicon.webmanifest }}' rel="manifest" />
-  {% endif %}
-  {% if config.extra.favicon.safari_pinned_tab %}
-  <link color="#5bbad5" href='{{ config.extra.favicon.safari_pinned_tab }}' rel="mask-icon" />
-  {% endif %}
-  {% if config.extra.favicon.favicon_16x16 %}
-  <link href='{{ config.extra.favicon.favicon_16x16 }}' rel="icon" sizes="16x16" type="image/png" />
-  {% endif %}
-  {% if config.extra.favicon.favicon_32x32 %}
-  <link href='{{ config.extra.favicon.favicon_32x32 }}' rel="icon" sizes="32x32" type="image/png" />
-  {% endif %}
-  {% if config.extra.favicon.apple_touch_icon %}
-  <link href='{{ config.extra.favicon.apple_touch_icon }}' rel="apple-touch-icon" sizes="180x180" />
-  {% endif %}
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="manifest" href="/icons/site.webmanifest">
+  <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/icons/favicon.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="/icons/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+
+
 
   {% if config.extra.galleria.enabled %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galleria@1.6.1/dist/themes/folio/galleria.folio.min.css" integrity="sha384-+rY0QD+LRnTOquDMzGa9lXU6jIwdiQuwCJQ2cdcW0qeP/0UbjQCZlXnRsUMA+9pH" crossorigin="anonymous">
@@ -35,8 +29,10 @@
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.1/css/academicons.min.css" integrity="sha384-FIue+PI4SsI9XfHCz8dBLg33b0c1fMJgNU3X//L26FYbGnlSEfWmNT7zgWc2N9b6" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+  <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" integrity="sha256-rTpdO0HXBCNpreAHcu6tB2Ppg515Vo+5GtYSsnNLz+8=" crossorigin="anonymous"> -->
   {% block user_custom_stylesheet %}
-  <link href="{{ get_url(path='bulma.css') }}" rel="stylesheet" />
+  <link id="style-light" href="{{ get_url(path='bulma_light.css') }}" rel="stylesheet" />
+  <link id="style-dark" href="{{ get_url(path='bulma_dark.css') }}" rel="stylesheet" disabled />
   {% endblock %}
 
   <title>
@@ -59,15 +55,8 @@
   {% endif %}
   {% endblock analytics %}
 
-  {% if config.extra.katex.enabled %}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css" integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js" integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx" crossorigin="anonymous"></script>
-
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/mathtex-script-type.min.js" integrity="sha384-jiBVvJ8NGGj5n7kJaiWwWp9AjC+Yh8rhZY3GtAX8yU28azcLgoRo4oukO87g7zDT" crossorigin="anonymous"></script>
-  {% if config.extra.katex.auto_render %}
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js" integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR" crossorigin="anonymous"></script>
-  {% endif %}
-  {% endif %}
+  {% block katex_scripts %}
+  {% endblock katex_scripts %}
 </head>
 
 <body>
@@ -99,29 +88,6 @@
 
   {% block content %}
   {% endblock %}
-
-  {% block search %}
-  <section class="modal" id="search-modal">
-    <div class="modal-background"></div>
-    <div class="modal-card">
-      <header class="modal-card-head">
-        <p class="modal-card-title">Search</p>
-      </header>
-      <section class="modal-card-body">
-        <div class="field mb-2">
-          <div class="control">
-            <input class="input" id="search" placeholder="Search this website." type="search" />
-          </div>
-        </div>
-        <div class="search-results">
-          <div class="search-results__items"></div>
-        </div>
-      </section>
-    </div>
-    <button aria-label="close" class="modal-close is-large"></button>
-  </section>
-  {% endblock %}
-
 
   {% block pagination %}
   {% if paginator.previous or paginator.next %}
@@ -204,8 +170,6 @@
   {% if config.extra.mapbox.enabled %}
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js" integrity="sha384-Pulw7+h73841BQIK0LzJCydKRPChJUF9w8h8W0o3h+cLtoyNPJS847bQauLWOTwg" crossorigin="anonymous"></script>
   {% endif %}
-  <script src="{{ get_url(path='elasticlunr.min.js') }}"></script>
-  <script src="{{ get_url(path='search_index.' ~ lang ~ '.js') }}"></script>
   {%- if lang != "en" -%}
   {%- block other_lang_search_js -%}
   {%- endblock -%}

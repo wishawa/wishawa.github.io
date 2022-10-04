@@ -108,15 +108,20 @@ function makeTeaser(body, terms) {
   return teaser.join("");
 }
 
-function documentReadyCallback() {
-
-  if (localStorage.getItem("theme") === "dark") {
-    document.documentElement.setAttribute("theme", "dark");
+function setToTheme(dark) {
+  if (dark) {
+    document.getElementById("style-light").setAttribute("disabled", "");
+    document.getElementById("style-dark").removeAttribute("disabled");
   }
   else {
-    document.documentElement.setAttribute("theme", "light");
+    document.getElementById("style-light").removeAttribute("disabled");
+    document.getElementById("style-dark").setAttribute("disabled", "");
   }
+}
 
+function documentReadyCallback() {
+
+  setToTheme(localStorage.getItem("theme") === "dark");
 
   document.querySelectorAll("div.navbar-end > .navbar-item").forEach((el) => {
     if (location.href.includes(el.getAttribute("href"))) {
@@ -125,26 +130,16 @@ function documentReadyCallback() {
     }
   })
 
-  document.querySelector(".modal-close").addEventListener("click", (evt) => {
-    document.querySelector("html").classList.remove("is-clipped");
-    evt.currentTarget.parentElement.classList.remove("is-active");
-  });
-
-  document.querySelector(".modal-background").addEventListener("click", (evt) => {
-    document.querySelector("html").classList.remove("is-clipped");
-    evt.currentTarget.parentElement.classList.remove("is-active");
-  });
-
   document.getElementById("dark-mode").addEventListener("click", () => {
     if (
       localStorage.getItem("theme") == null ||
       localStorage.getItem("theme") == "light"
     ) {
       localStorage.setItem("theme", "dark");
-      document.documentElement.setAttribute("theme", "dark");
+      setToTheme(true);
     } else {
       localStorage.setItem("theme", "light");
-      document.documentElement.setAttribute("theme", "light");
+      setToTheme(false);
     }
   });
 
