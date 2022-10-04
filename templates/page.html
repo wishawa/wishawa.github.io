@@ -84,56 +84,6 @@
 </section>
 {% endblock %}
 
-{% block pagination %}
-{% if page.earlier or page.later or page.lighter or page.heavier %}
-<section class="section">
-  <div class="container">
-    <div class="columns is-centered">
-      <div class="column is-8">
-        <nav class="level">
-          {% if page.later %}
-          <div class="level-item has-text-centered">
-            <a class="button is-black is-outlined" href="{{ page.later.permalink }}">
-              <span class="icon mr-2">
-                <i class="fas fa-arrow-circle-left"></i>
-              </span>
-              {{ page.later.title }}
-            </a>
-          </div>
-          {% endif %} {% if page.earlier %}
-          <div class="level-item has-text-centered">
-            <a class="button is-black is-outlined" href="{{ page.earlier.permalink }}">
-              {{ page.earlier.title }}<span class="icon ml-2">
-                <i class="fas fa-arrow-circle-right"></i>
-              </span>
-            </a>
-          </div>
-          {% endif %} {% if page.heavier %}
-          <div class="level-item has-text-centered">
-            <a class="button is-black is-outlined" href="{{ page.heavier.permalink }}">
-              <span class="icon mr-2">
-                <i class="fas fa-arrow-circle-left"></i>
-              </span>
-              {{ page.heavier.title }}
-            </a>
-          </div>
-          {% endif %} {% if page.lighter %}
-          <div class="level-item has-text-centered">
-            <a class="button is-black is-outlined" href="{{ page.lighter.permalink }}">
-              {{ page.lighter.title }}<span class="icon ml-2">
-                <i class="fas fa-arrow-circle-right"></i>
-              </span>
-            </a>
-          </div>
-          {% endif %}
-        </nav>
-      </div>
-    </div>
-  </div>
-</section>
-{% endif %}
-{% endblock %}
-
 {% block comment %}
 {% if page.extra.comments and config.extra.commenting.disqus %}
 <section class="section">
