@@ -1,5 +1,5 @@
 +++
-title = "Test Post"
+title = "New Website"
 date = 2022-09-30
 
 [extra]
@@ -10,13 +10,13 @@ categories = ["Meta"]
 +++
 
 
-This is my website! It's new! It is powered by [Zola](https://www.getzola.org/) and based on the [DeepThought theme](https://github.com/RatanShreshtha/DeepThought).
+This is my website! It's new! It's powered by [Zola](https://www.getzola.org/) and based on the [DeepThought theme](https://github.com/RatanShreshtha/DeepThought).
 
 LaTeX is cool
 $$f'(x) = \lim_{h \rightarrow 0} \frac{f(x + h) - f(x)}{h}$$
 
 Syntax highlighting works
 ```python
-def test(numer: int):
+def test(number: int):
 	print(f"the number is {number}")
 ```
