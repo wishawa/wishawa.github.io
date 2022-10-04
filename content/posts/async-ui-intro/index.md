@@ -1,7 +1,7 @@
 +++
 title = "Async UI: a Rust UI Library where Everything is a Future"
 description = "Lifetime-Friendly, Component-Based, Retained-Mode UI Powered by Async Rust"
-date = 2022-10-01
+date = 2022-10-04
 [taxonomies]
 categories = ["Tech"]
 tags = ["Async UI", "Rust"]
@@ -27,10 +27,9 @@ GTK Hacker News Screenshot
 
 UI widgets are **retained**: they run some code, stay there and wait for some events (such as user interactions), and then run some more code to handle those events.
 
-Sync Rust cannot handle the *stay there and wait for some events* step in a clean way.
-With sync Rust it is almost impossible to express how long a widget would live.
+Sync Rust cannot handle the *stay there and wait for some events* step in a clean way. Widgets can live for arbitrarily long, and sync Rust lifetimes cannot express that.
 
-Async Rust solves this problem: in async functions, lifetimes can span across await points that may pause for however long we want. This allows us to express a widgets lifetimes directly with Rust lifetimes. To do so, we represent components by async functions.
+Async Rust solves this problem: in async functions, lifetimes can span across await points, and await points may pause for however long we want. This allows us to express a widgets' lifetimes directly with Rust lifetimes. To do so, we represent components as async functions.
 
 ## Components are Futures
 
@@ -77,7 +76,7 @@ Here, we are rendering the "Hello World!" and a button next to it. Inside the bu
 
 ## Express Complex UI Flows
 
-Components being async functions makes it easy to write complex UI control flow.
+Components being async functions makes writing UI flows as easy as writing code flows.
 
 With if/else, loop/break, and [race](https://docs.rs/futures-lite/latest/futures_lite/future/fn.race.html), you can describe complicated UI flows very intuitively.
 
