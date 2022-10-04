@@ -31,7 +31,7 @@ Sync Rust cannot handle the *stay there and wait for some events* step in a clea
 
 Async Rust solves this problem: in async functions, lifetimes can span across await points, and await points may pause for however long we want. This allows us to express a widgets' lifetimes directly with Rust lifetimes. To do so, we represent components as async functions.
 
-## Components are Futures
+## Widgets are Futures
 
 ```rust
 async fn hello_world() {
@@ -46,7 +46,8 @@ The `hello_world` function we just made is also a component. To render it, just 
 ## Easily Compose Components
 
 Modern UI programming is all about *composition* — encapsulating many child components in a single parent component.
-In the Future analogy this would be equivalent to having a parent async function that calls many child async functions in parallel by [joining](https://doc.rust-lang.org/std/future/macro.join.html) them.
+This is analogous to [joining](https://docs.rs/futures/latest/futures/future/fn.join.html) futures: you join many child futures together to get one future that runs all the children in parallel.
+
 
 In Async UI, this joining is done with *fragments*. A `Fragment` is a future that contains multiple widgets. When you await the Fragment, all the widgets in it are rendered.
 
