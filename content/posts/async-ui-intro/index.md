@@ -1,6 +1,6 @@
 +++
 title = "Async UI: a Rust UI Library where Everything is a Future"
-description = "Take advantage of async Rust make building UIs safe and intuitive!"
+description = "Lifetime-Friendly, Component-Based, Retained-Mode UI Powered by Async Rust"
 date = 2022-10-01
 [taxonomies]
 categories = ["Tech"]
@@ -145,8 +145,7 @@ For advanced reactivity and state management, I'm not sure what model will fit b
 ## Take Advantage of the Async Ecosystem
 
 Async UI is "just async Rust", so it is very easy to use together with Rust libraries.
-Under the hood, it uses [async-executor](https://crates.io/crates/async-executor) from the async-std / smol team,
-so anything that works on async-std should be compatible with Async UI. The GTK Hacker News demo you see above, for example, uses [surf](https://github.com/http-rs/surf) to fetch data.
+Under the hood, it uses [async-executor](https://crates.io/crates/async-executor) from the smol team. This is the same executor used by async-std, so anything that works on async-std should be compatible with Async UI. The GTK Hacker News demo you see above, for example, uses async-std's [surf](https://github.com/http-rs/surf) crate to fetch data.
 
 ## End Notes
 
