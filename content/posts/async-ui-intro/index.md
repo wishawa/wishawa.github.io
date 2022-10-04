@@ -19,9 +19,9 @@ Todo List Demo [(interactive version here)](https://wishawa.github.io/async_ui/t
 
 ![Todo List demo](web-todomvc.png)
 
-GTK Counter Screenshot
+GTK Hacker News Screenshot
 
-![GTK Counter screenshot](gtk-counter.png)
+![GTK Hacker News screenshot](gtk-hackernews.png)
 
 ## Why Async for UIs?
 
@@ -153,7 +153,7 @@ so anything that works on async-std should be compatible with Async UI.
 
 ## End Notes
 
-Async UI is **not ready yet**. The core idea is complete, but lots of work remain to be done on the built-in components.
+Async UI is **still under development**. The core idea is complete, but lots of work remain to be done on the built-in components.
 
 There's a lot more to explain about the workings of the library. I'll post more blog posts soon. Stay tuned!
 
