@@ -152,3 +152,5 @@ Async UI is **still under development**. The core idea is complete, but lots of 
 There's a lot more to explain about the workings of the library. I'll post more blog posts soon. Stay tuned!
 
 [GitHub repo for Async UI](https://github.com/wishawa/async_ui)
+
+Discuss this post on [Rust Users](https://users.rust-lang.org/t/blog-post-async-ui-a-rust-ui-library-where-everything-is-a-future/82256), [Reddit](https://www.reddit.com/r/rust/comments/xvv49w/async_ui_a_rust_ui_library_where_everything_is_a/), [Hacker News](https://news.ycombinator.com/item?id=33089131).
