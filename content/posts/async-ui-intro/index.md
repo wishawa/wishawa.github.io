@@ -105,6 +105,8 @@ async fn login_flow() {
 }
 ```
 
+The full code for this control flow example is available [here](https://github.com/wishawa/async_ui/blob/main/examples/gtk-login-form/src/main.rs).
+
 ## Bring your own Reactivity
 
 The core of Async UI doesn't know anything about reactivity.
