@@ -1,4 +1,6 @@
 {% macro post_item_display(page) %}
+	{% if page.extra.hidden %}
+	{% else %}
         <article class="box">
           <h2 class="title">
             <a class="has-text article-preview-title" href='{{ page.permalink }}'>
@@ -33,5 +35,6 @@
             </div>
           </div>
         </article>
+	{% endif %}
 {% endmacro %}
 
