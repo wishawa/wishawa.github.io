@@ -10,7 +10,7 @@ categories = ["Tech"]
 tags = ["Async UI", "Rust"]
 +++
 
-Disclaimer: this post contains a lot of oversimplification
+**Disclamer**: this post contains a lot of oversimplification.
 
 ## Fearless concurrency with scoped threads
 No standard library API demonstrate Rust's *Fearless Concurrency* motto better than `std::thread::scope`.
@@ -65,7 +65,7 @@ let mut x = 0;
 a.push(4);
 ```
 
-To create threads, you create closures with lifetime not smaller than `'life`. Rust usual lifetime rules apply here: within `'life`, your closures can't borrow things that someone else is mutating or mutate things that someone else is borrowing.
+To use scoped threads, you first create closures with lifetime not smaller than `'life`. Rust's usual lifetime rules apply here: within `'life`, your closures can't borrow things that someone else is mutating or mutate things that someone else is borrowing.
 
 The job of `thread::scope` is to spawn your closures into threads. The closures are only guaranteed to be valid within `'life`, so these threads **must start and end within `'life`**.
 
@@ -89,13 +89,13 @@ let my_closure_2 = || { /* ... */ };
 a.push(4);
 ```
 
-The start part is easy enough: just spawn the closures! The end part is much harder: `thread::scope` must ensure that the we don't progress beyond `'life` before all the threads have finished.
+The start part is easy enough: just spawn the closures! The end part is harder: `thread::scope` must ensure that the we don't progress beyond `'life` before all the threads have finished.
 
 To accomplish this, `thread::scope` gives you a [Scope](https://doc.rust-lang.org/stable/std/thread/struct.Scope.html) object called **s**. To spawn each closure, you do `s.spawn(closure)`. This spawns the closure into a thread, and *records the existence of that thread within* **s**.
 
 Once all the threads have been spawned, `thread::scope` will go into [an infinite loop](https://doc.rust-lang.org/1.64.0/src/std/thread/scoped.rs.html#149). It will only break from this loop once all the threads spawned by **s** have completed.
 
-At this point we know that all the closures have been dropped. The work of `thread::scope` is done. It returns. We exit the lifetime `'life`.
+At this point we know that all the spawned closures have been dropped. The work of `thread::scope` is done. It returns. We exit the lifetime `'life`.
 
 Overall, expanding `thread::scope` would give something like this
 
@@ -128,7 +128,7 @@ A [future](https://doc.rust-lang.org/std/future/trait.Future.html) is like a pau
 ### What's a task?
 Tasks are the async equivalent of threads. They are futures that have been placed under control of the *executor*. The executor will schedule and execute tasks, similar to how the OS schedule and execute threads.
 
-### Imagining scoped tasks
+### Envisioning scoped tasks
 
 An async version of `thread::scope` would probably look something like this
 ```rust
@@ -157,7 +157,7 @@ Unfortunately, `scoped_tasks` as envisioned provides an unsound API. How so? Let
 
 ---
 
-First, we create a future `fut_1` that we want to spawn. `fut_1` has lifetime no smaller than `'life`.
+First, we create a future `fut_1` that we want to spawn. Let's assume the lifetime of `fut_1` ends at the same point as `'life` (i.e. `fut_1` must be dropped before `'life` ends).
 
 ```rust
 let fut_1 = async { /* ... */ };
@@ -196,7 +196,7 @@ This will cause the future **x** to do work. In this case, it spawns `fut_1`.
 
 ---
 
-The future **x** is now waiting for the spawned task of `fut_1` to complete. In the sync version, this step would involve looping until the thread completes.
+The future **x** is now waiting for the spawned task of `fut_1` to complete. In the sync version, we would loop until the threads complete.
 
 In async Rust, running an idle infinite loop for a long time is a bad idea. It "blocks the executor". Instead of looping, our future **x** must pause and wait to be polled again once the spawned tasks have completed.
 
@@ -230,12 +230,12 @@ Still, unsound is unsound. We can't just expose `scoped_tasks` as a safe functio
 
 The easiest fix is to simply expose the function as unsafe, and document that user must not ignore the future returned from the function.
 
-Another solution is to make scoped tasks work more similarly to scoped threads, specifically by making it use infinite loop to wait. This is in essence the approach taken by the [async-scoped crate](https://crates.io/crates/async-scoped).
+Another solution is to make scoped tasks work more similarly to scoped threads, specifically by making it use a loop to wait. This is in essence the approach taken by the [async-scoped crate](https://crates.io/crates/async-scoped).
 
 But as mentioned, looping like this "blocks the executor" and removes many benefits of async. This can become a real issue if you need to use scoped tasks in many places, or if you are in an environment such as browser WASM, where blocking is totally unacceptable.
 
 ### New approach: scoped_async_spawn
 
-[Async UI](https://wishawa.github.io/posts/async-ui-intro/) meets both of the aforementioned criteria: it needs to spawn a task for every UI component, and also be able to run in the browser. To make Async UI work, I made [scoped_async_spawn](https://crates.io/crates/scoped-async-spawn), which uses [Pin](https://doc.rust-lang.org/std/pin/struct.Pin.html) and runtime checks to make sure that the spawning future (the **x** in our example) can't be ignored.
+[Async UI](https://wishawa.github.io/posts/async-ui-intro/) faces both of the aforementioned issues: it needs to spawn a task for every UI component, and also be able to run in the browser. To make Async UI work, I made [scoped_async_spawn](https://crates.io/crates/scoped-async-spawn), which uses [Pin](https://doc.rust-lang.org/std/pin/struct.Pin.html) and runtime checks to make sure that the spawning future (the **x** in our example) can't be ignored.
 
 The mechanism of scoped_async_spawn is a blog-post worth of content in itself, so I'll make a separate post about it soon. Stay tuned!
