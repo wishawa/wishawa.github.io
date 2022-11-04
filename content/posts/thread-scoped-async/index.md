@@ -10,7 +10,9 @@ categories = ["Tech"]
 tags = ["Async UI", "Rust"]
 +++
 
-**Disclamer**: this post contains a lot of oversimplification.
+**Disclamer**: This post contains a lot of oversimplification.
+
+**TL; DR**: Scoped threads wait for threads to finish in a loop. Async version can't wait until tasks are finished because futures can be ignored/forgotten.
 
 ## Fearless concurrency with scoped threads
 No standard library API demonstrate Rust's *Fearless Concurrency* motto better than `std::thread::scope`.
@@ -153,6 +155,7 @@ a.push(4);
 It spawns futures as tasks instead of closures as threads. And note that we need to await it at the end.
 
 ## Unsoundness of scoped tasks
+
 Unfortunately, `scoped_tasks` as envisioned provides an unsound API. How so? Let's demonstrate by abusing the function step-by-step.
 
 ---
@@ -165,12 +168,7 @@ let fut_1 = async { /* ... */ };
 
 ---
 
-Then, let the lifetime `'life` start
-
-```rust
-//            start of 'life
-// -------------------------------------
-```
+Then, let the lifetime `'life` start...
 
 ---
 
@@ -198,7 +196,7 @@ This will cause the future **x** to do work. In this case, it spawns `fut_1`.
 
 The future **x** is now waiting for the spawned task of `fut_1` to complete. In the sync version, we would loop until the threads complete.
 
-In async Rust, running an idle infinite loop for a long time is a bad idea. It "blocks the executor". Instead of looping, our future **x** must pause and wait to be polled again once the spawned tasks have completed.
+In async Rust, running an idle infinite loop for a long time is a bad idea; it "blocks the executor". Instead of looping, our future **x** must pause and wait to be polled again once the spawned tasks have completed.
 
 This is the critical step where the problem arises. Our future **x** pauses to wait, **but there is nothing to guarantee that the rest of the program will respect x's decision to pause!** While **x** is paused, other parts of the program could do all sorts of things. There is no guarantee that the rest of the program would even honor **x**'s request to be polled again once the tasks have completed!
 
@@ -210,17 +208,12 @@ That's exactly how we'll bring out the unsoundness. Instead of waiting and polli
 
 Our code simply progresses forward to the end of `'life`.
 
-```rust
-// -------------------------------------
-//             end of 'life
-```
-
 ---
 
 See the unsoundness? The future `fut_1` is only guaranteed to last within `'life`. We have gone beyond the end of `'life`, yet the task of `fut_1` is still running in the executor. We're running `fut_1` beyond it's lifetime!
 
 
-## It's unsound. Now what?
+## Dealing with the unsoundness
 
 First, it's not so bad. As you can see, the process to bring out the unsoundness of scoped tasks is pretty contrived. The "manually poll **x**" step is not something you do in everyday code.
 
