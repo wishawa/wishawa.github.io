@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title>Wisha Wanichwecharungruang - Meta</title>
+        <link>https://wishawa.github.io</link>
+        <description></description>
+        <generator>Zola</generator>
+        <language>en</language>
+        <atom:link href="https://wishawa.github.io/categories/meta/rss.xml" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>Fri, 30 Sep 2022 00:00:00 +0000</lastBuildDate>
+        
+        <item>
+            <title>New Website</title>
+            <pubDate>Fri, 30 Sep 2022 00:00:00 +0000</pubDate>
+            <link>https://wishawa.github.io/posts/first-post/</link>
+            <guid>https://wishawa.github.io/posts/first-post/</guid>
+            <description>&lt;p&gt;This is my website! It&#x27;s new! It&#x27;s powered by &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;&quot;&gt;Zola&lt;&#x2F;a&gt; and based on the &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;RatanShreshtha&#x2F;DeepThought&quot;&gt;DeepThought theme&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;LaTeX is cool
+$$f&#x27;(x) = \lim_{h \rightarrow 0} \frac{f(x + h) - f(x)}{h}$$&lt;&#x2F;p&gt;
+&lt;p&gt;Syntax highlighting works&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;python&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-python &quot;&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;def &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;test&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eb6772;&quot;&gt;number&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;: int):
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;print&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;f&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;the number is &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{number}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;)
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>
