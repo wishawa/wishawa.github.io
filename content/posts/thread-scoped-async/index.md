@@ -151,6 +151,8 @@ a.push(4);
 ```
 It spawns futures as tasks instead of closures as threads. And note that we need to await it at the end.
 
+Those familiar with async Rust would notice that this looks very similar to [joining futures](https://docs.rs/futures/latest/futures/future/fn.join.html). Internally, though, it is different. By spawning the futures to the executor, we can [get asymptotically better performance](https://www.reddit.com/r/rust/comments/ym45s6/comment/iv1xt2r/?utm_source=share&utm_medium=web2x&context=3) compared to joining.
+
 ## Unsoundness of scoped tasks
 
 Unfortunately, `scoped_tasks` as envisioned provides an unsound API. How so? Let's demonstrate by abusing the function step-by-step.
@@ -229,3 +231,6 @@ But as mentioned, looping like this "blocks the executor" and removes many benef
 [Async UI](https://wishawa.github.io/posts/async-ui-intro/) faces both of the aforementioned issues: it needs to spawn a task for every UI component, and also be able to run in the browser. To make Async UI work, I made [scoped_async_spawn](https://crates.io/crates/scoped-async-spawn), which uses [Pin](https://doc.rust-lang.org/std/pin/struct.Pin.html) and runtime checks to make sure that the spawning future (the **x** in our example) can't be ignored.
 
 The mechanism of scoped_async_spawn is a blog-post worth of content in itself, so I'll make a separate post about it soon. Stay tuned!
+
+
+Discuss this post on [Reddit](https://www.reddit.com/r/rust/comments/ym45s6/blog_post_scoped_threads_in_rust_and_why_its/).
