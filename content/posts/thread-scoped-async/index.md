@@ -47,7 +47,7 @@ Scoped threads was introduced in 2015. Unfortunately, that first version [was un
 Let's examine how it works...
 
 ## Controlling threads' lifetimes
-Borrows in Rust have lifetimes. `thread::scope` allows your threads to borrow data... for the lifetime of `'life`.
+Borrows in Rust have lifetimes. `thread::scope` allows your threads to borrow data from the main thread for a lifetime of `'life`.
 
 In the example code shown earlier, `'life` would be a segment in the code. Like this
 
@@ -122,7 +122,7 @@ a.push(4);
 ## Async version of scoped threads
 
 ### What's a future?
-A [future](https://doc.rust-lang.org/std/future/trait.Future.html) is like a pausable closure. It gets *polled*, driving it to run some code. It then *pauses* to wait for something to happen. When that thing happens, the future gets polled again and run more code...
+A [future](https://doc.rust-lang.org/std/future/trait.Future.html) is like a pausable closure. It gets *polled*, driving it to run some code. It then *pauses* to wait for something to happen. When that thing happens, the future gets polled again and runs more code...
 
 ### What's a task?
 Tasks are the async equivalent of threads. They are futures that have been placed under control of the *executor*. The executor will schedule and execute tasks, similar to how the OS schedule and execute threads.
