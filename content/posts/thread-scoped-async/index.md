@@ -2,9 +2,6 @@
 title = "Scoped threads in Rust, and why its async counterpart would be unsound"
 date = 2022-11-01
 
-[extra]
-hidden = true
-
 [taxonomies]
 categories = ["Tech"]
 tags = ["Async UI", "Rust"]
