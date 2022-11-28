@@ -35,7 +35,7 @@ Async Rust solves this problem: in async functions, lifetimes can span across aw
 
 ```rust
 async fn hello_world() {
-	text(&"Hello World!").await;
+	text(&["Hello World!"]).await;
 }
 ```
 
@@ -60,13 +60,11 @@ async fn hello_world_2() {
 		// have a button beside it
 		button(ButtonProps {
 			children: fragment((
-				text(&"Say hello back"),
+				text(&["Say hello back"]),
 			)),
-			on_press: Some(
-				&mut |_ev: PressEvent| {
-					todo!();
-				}
-			),
+			on_press: &mut |_ev: PressEvent| {
+				todo!();
+			},
 			..Default::default()
 		})
 	)).await;
@@ -127,13 +125,13 @@ async fn counter() {
 
 		button(ButtonProps {
 			children: fragment((
-				text(&"+"),
+				text(&["+"]),
 			)),
-			on_press: Some(&mut |_ev| {
+			on_press: &mut |_ev| {
 				// Upon press, increment count and update the string accordingly.
 				count += 1;
 				*count_string.borrow_mut() = count.to_string();
-			}),
+			},
 			..Default::default()
 		})
 	)).await;
