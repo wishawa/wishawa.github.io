@@ -106,6 +106,7 @@ let's communicate this through `&` and `|`
 ```
 
 # Useful Links
+- [Discuss this on Reddit](https://www.reddit.com/r/rust/comments/10golkq)
 - [Playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=71da59351b0988249a69014e6b191353) containing the implementations behind some of the code shown here
 - [std::ops docs](https://doc.rust-lang.org/std/ops/index.html)
 - [Rust operators precedence table](https://doc.rust-lang.org/reference/expressions.html#expression-precedence)
