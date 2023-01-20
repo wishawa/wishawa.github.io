@@ -1,6 +1,6 @@
 
 +++
-title = "Fun things to do with Rust operator overloading"
+title = "Six fun things to do with Rust operator overloading"
 description = "abusing overloading to make custom syntax and more..."
 date = 2023-01-19
 
@@ -99,7 +99,7 @@ Futures combinators can have short-circuiting behaviors
 // quit if any of the 3 succeeds
 (fut4, fut5, fut6).race_ok().await;
 ```
-let's communicate that through `&` and `|`
+let's communicate this through `&` and `|`
 ```rust
 (TryJoin >> fut1 & fut2 & fut3).await;
 (RaceOk >> fut4 | fut5 | fut6).await;
