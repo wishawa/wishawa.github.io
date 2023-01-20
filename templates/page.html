@@ -99,6 +99,8 @@
 {% endblock %}
 
 {% block notice %}
+{% if page.extra.hide_notice %}
+{% else %}
 <section class="section pt-0">
   <div class="container">
     <div class="columns is-centered">
@@ -116,6 +118,7 @@
     </div>
   </div>
 </section>
+{% endif %}
 {% endblock %}
 
 {% block custom_js %}
