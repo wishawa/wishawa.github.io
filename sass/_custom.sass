@@ -33,4 +33,16 @@ code
 
 .article-preview-title
 	color: $text-strong;
-	
+
+details
+	border: 1px solid transparentize($scheme-invert, 0.8);
+	border-radius: 0.5rem;
+	padding: 0.5rem;
+	margin-bottom: 1.0rem;
+
+details > summary
+	cursor: pointer;
+	font-weight: bold;
+
+details[open] > summary
+	margin-bottom: 1rem;
