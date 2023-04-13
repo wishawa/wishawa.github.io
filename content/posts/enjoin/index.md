@@ -119,17 +119,9 @@ The *enjoin* macro does a bit more than what macros were meant to do, so there a
 
 * If branching statements and/or captured variables are hidden in another macro, *enjoin* wouldn't be able to transform them. This will usually cause compilation failure.
 
-	```rust
-	enjoin::join!({ vec![
-		// enjoin can't see the code in this vec!
-	] });
-	```
+* If an `await` is hidden inside a macro, `join_auto_borrow!` won't be able to unlock the RefCell for the yieldpoint, leading to a RefCell panic.
 
-* If an `await` is hidden inside a macro, `join_auto_borrow!` won't be able to unlock the RefCell for the yieldpoint, leading to a RefCell panic. This limitation means you can't nest `enjoin::join!` within itself, and can't use `tokio::join!` inside `enjoin::join!`.
-
-* With only syntactic information, *enjoin* can only guess whether or not a name is a borrowed variable, and whether or not that borrow is mutable. We have heuristics, but even so the macro may end up RefCell-ing immutable borrows, constants, or function pointers sometimes. You can avoid this by following Rust's naming convention (such as using CamelCase for types) and explicitly writing `(&mut var).method()` or `(&var).method()`.
-
-* If there is an error with code inside the macro, the compiler spits out very confusing error messages. This problem is not really specific to *enjoin*, but it seems to be more severe here. I cope by using Rust Analyzer's "inline macro" action to temporarily expand the macro.
+* With only syntactic information, *enjoin* can only guess whether or not a name is a borrowed variable, and whether or not that borrow is mutable. We have heuristics, but even so the macro may end up RefCell-ing immutable borrows, constants, or function pointers sometimes.
 
 ## Sample expansion
 
