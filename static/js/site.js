@@ -23,6 +23,57 @@ function isCurrentlyDark() {
   return readTheme === "dark" || (readTheme !== "light" && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
 }
 
+const SUMMARY_HEIGHT_OFFSET = 16;
+const MAX_HEIGHT_OFFSET = 4;
+function initializeExpandables() {
+  const summaries = document.querySelectorAll("details > summary");
+  for (const summary of summaries) {
+    const detailBlock = summary.parentElement;
+    let baseHeight = '0px';
+    let expandedHeight = '0px';
+    let working = false;
+
+    summary.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      if (!working) working = true;
+      else return;
+      if (!detailBlock.open) {
+        baseHeight = summary.offsetHeight + SUMMARY_HEIGHT_OFFSET + 'px';
+        detailBlock.classList.add("expandable-measuring");
+        detailBlock.style.maxHeight = baseHeight;
+        detailBlock.open = true;
+        setTimeout(() => {
+          expandedHeight = detailBlock.scrollHeight + MAX_HEIGHT_OFFSET + 'px';
+          detailBlock.classList.remove("expandable-measuring");
+          detailBlock.style.maxHeight = null;
+          detailBlock.animate({
+            maxHeight: [baseHeight, expandedHeight],
+            offset: [0, 1.0]
+          }, {
+            duration: 200,
+          }).addEventListener("finish", () => {
+            working = false;
+          });
+        });
+      }
+      else {
+        baseHeight = summary.offsetHeight + SUMMARY_HEIGHT_OFFSET + 'px';
+        expandedHeight = detailBlock.scrollHeight + MAX_HEIGHT_OFFSET + 'px';
+        detailBlock.animate({
+          height: [expandedHeight, baseHeight],
+          offset: [0, 1.0]
+        }, {
+          duration: 200,
+        }).addEventListener("finish", () => {
+          detailBlock.style.maxHeight = null;
+          detailBlock.open = false;
+          working = false;
+        });
+      }
+    });
+  }
+}
+
 function documentReadyCallback() {
   styleDark = document.getElementById("style-dark");
   styleLight = document.getElementById("style-light");
@@ -119,6 +170,8 @@ function documentReadyCallback() {
       ]
     });
   }
+
+  initializeExpandables();
 };
 
 if (document.readyState === 'loading') {  // Loading hasn't finished yet

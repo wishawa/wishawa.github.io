@@ -23,21 +23,6 @@ code
 .article-preview-title
 	color: $text-strong
 
-details
-	border: 1px solid transparentize($scheme-invert, 0.8)
-	border-radius: $radius
-	padding: 0.5rem
-	margin-bottom: 1.0rem
-
-details
-	> summary
-		cursor: pointer
-		font-weight: bold
-
-details[open]
-	> summary
-		margin-bottom: 1rem
-
 nav.floating-nav
 	position: sticky
 	top: 0
@@ -62,3 +47,53 @@ nav.floating-nav
 
 		line-height: 1.5
 		padding: 0.5rem 0.75rem
+
+b.compile-fail-code-label
+	display: block
+
+b.compile-fail-code-label + pre
+	border-inline-start: 4px solid $danger
+
+details
+	border: 1px solid transparentize($scheme-invert, 0.8)
+	border-radius: $radius
+	padding: 0.5rem
+	margin-bottom: 1.0rem
+	overflow-y: hidden
+
+	> summary::-webkit-details-marker
+		display: none
+
+	> summary
+		list-style: none
+		cursor: pointer
+		font-weight: bold
+		
+		> p
+			margin-inline-start: 1em
+
+		> p:first-child::before
+			display: inline-block
+			position: relative
+			inset-inline-start: -1em
+			margin-inline-end: -0.4em
+			content: ''
+			border-top: 0.4em solid transparent
+			border-bottom: 0.4em solid transparent
+			border-left: 0.4em solid $text
+			height: 0
+			width: 0
+			transform: rotate(0)
+			transform-origin: .2em 50%
+			transition: .25s transform
+
+details[open]
+	> summary
+		margin-bottom: 1rem
+
+		> p:first-child::before
+			transform: rotate(90deg)
+
+details.expandable-measuring
+	> summary ~ *
+		visibility: hidden
