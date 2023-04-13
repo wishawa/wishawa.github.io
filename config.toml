@@ -45,7 +45,6 @@ navbar_items = [
  { code = "en", nav_items = [
   { url = "$BASE_URL/", name = "About" },
   { url = "$BASE_URL/posts", name = "Posts" },
-  { url = "$BASE_URL/tags", name = "Tags" },
  ]},
 ]
 

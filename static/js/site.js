@@ -29,13 +29,6 @@ function documentReadyCallback() {
 
   setToTheme(isCurrentlyDark());
 
-  document.querySelectorAll("div.navbar-end > .navbar-item").forEach((el) => {
-    if (location.href.includes(el.getAttribute("href"))) {
-      document.querySelectorAll("a.navbar-item.is-active").forEach(itm => itm.classList.remove("is-active"));
-      el.classList.add("is-active");
-    }
-  })
-
   document.getElementById("dark-mode").addEventListener("click", () => {
     setToTheme(!isCurrentlyDark());
   });

@@ -20,25 +20,45 @@ code
 	code
 		tab-size: 2
 
-.navbar-brand
-	display: none
-
-.navbar > .container > .navbar-menu
-	margin-left: 0
-	margin-right: 0
-
 .article-preview-title
 	color: $text-strong
 
 details
 	border: 1px solid transparentize($scheme-invert, 0.8)
-	border-radius: 0.5rem
+	border-radius: $radius
 	padding: 0.5rem
 	margin-bottom: 1.0rem
 
-details > summary
-	cursor: pointer
-	font-weight: bold
+details
+	> summary
+		cursor: pointer
+		font-weight: bold
 
-details[open] > summary
-	margin-bottom: 1rem
+details[open]
+	> summary
+		margin-bottom: 1rem
+
+nav.floating-nav
+	position: sticky
+	top: 0
+	align-self: flex-end
+	z-index: 30
+	background-color: $scheme-main
+
+	border-block-end: 1px solid $text-light
+	border-inline-start: 1px solid $text-light
+	border-end-start-radius: $radius
+	overflow: hidden
+
+	display: flex
+
+	.nav-link
+		display: block
+		color: $text
+
+		&:hover
+			color: $link
+			background-color: $scheme-main-bis
+
+		line-height: 1.5
+		padding: 0.5rem 0.75rem

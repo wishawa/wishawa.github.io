@@ -59,27 +59,21 @@
 </head>
 
 <body>
-  <nav aria-label="section navigation" class="navbar" role="navigation">
-    <div class="container">
-      <div class="navbar-menu" id="navMenu">
-        <div class="navbar-end has-text-centered">
-          {% for item in config.extra.navbar_items %}
-          {% if lang == item.code %}
-          {% for nav in item.nav_items %}
-          <a class="navbar-item has-text-weight-semibold" href="{{ nav.url | replace(from='$BASE_URL', to=config.base_url) }}">
-            {{ nav.name }}
-          </a>
-          {% endfor %}
-          {% endif %}
-          {% endfor %}
-          <a class="navbar-item" id="dark-mode" title="Switch theme">
-            <span class="icon">
-              <i class="fas fa-adjust"></i>
-            </span>
-          </a>
-        </div>
-      </div>
-    </div>
+  <nav aria-label="section navigation" role="navigation" class="floating-nav">
+      {% for item in config.extra.navbar_items %}
+      {% if lang == item.code %}
+      {% for nav in item.nav_items %}
+      <a class="nav-link has-text-weight-semibold" href="{{ nav.url | replace(from='$BASE_URL', to=config.base_url) }}">
+        {{ nav.name }}
+      </a>
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
+      <a class="nav-link" id="dark-mode" title="Switch theme">
+        <span class="icon">
+          <i class="fas fa-adjust"></i>
+        </span>
+      </a>
   </nav>
 
   {% block header %}
