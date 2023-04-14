@@ -172,6 +172,6 @@ The *enjoin* macro does a bit more than what macros were meant to do, so there a
 
 ## End
 
-Discuss this post on [Reddit](TODO add link).
+Discuss this post on [Reddit](https://www.reddit.com/r/rust/comments/12lhayz/a_syntaxlevel_async_join_macro_supporting/).
 
 See *enjoin* on [GitHub](https://github.com/wishawa/enjoin), [crates.io](https://crates.io/crates/enjoin), and [docs.rs](https://docs.rs/enjoin).
