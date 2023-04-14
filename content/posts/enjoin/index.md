@@ -72,7 +72,7 @@ The problem is that **async blocks are not simply blocks of async code**. They b
 
 ## Syntax-level join
 
-Since these annoyances come with futures / async blocks, the first step to fixing them is to have a new API for joining. The *enjoin* library pretends not to operate on *Future* objects. The macro instead takes in regular blocks of code, and, as far as the user is concerned, magically run those blocks concurrently.
+The first step to avoiding async blocks and the associated annoyances is to come up with a new API for concurrency. The *enjoin* library pretends not to operate on *Future* objects. The macro instead takes in regular blocks of code, and, as far as the user is concerned, magically run those blocks concurrently.
 
 Of course the actual implementation is not magic. The macro still secretly transforms the blocks into async blocks so they can be polled concurrently. What is special is that the transformation does much more than just adding the word `async`...
 
@@ -94,7 +94,7 @@ Is automatic RefCell-ing horrible design?
 
 Indiscriminate automatic RefCell-ing is definitely horrible, but that isn't what we're doing here. What *enjoin* is doing is merely working around the issue mentioned <a href="#closure-lifetime-issue">above</a>. This workaround is completely internal; *enjoin* could [switch to GhostCell in the future](https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_wants_to_use_ghostcell.html) and users won't notice anything (in fact, being compatible with GhostCell is another indication that our use of RefCell is well under control).
 
-From a user's perspective, think of *enjoin*'s borrowing behavior as an extremely twisted extension to non-lexical lifetimes; lifetime follows execution, not lexical scope; joinee blocks are executed in lockstep, so the borrow lifetimes follow that.
+From the user's perspective, *enjoin*'s borrowing behavior can be seen as an extremely twisted extension to non-lexical lifetimes: lifetime follows execution, not lexical scope; joinee blocks are executed in lockstep, so the borrow lifetimes follow that.
 
 </details>
 
