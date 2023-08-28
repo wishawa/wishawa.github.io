@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="manifest" href="/icons/site.webmanifest">
+  <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/icons/favicon.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="/icons/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex">
+  
+  <meta http-equiv="refresh" content="0; url=https://wisha.page&#x2F;posts&#x2F;thread-scoped-async&#x2F;">
+  
+
+
+
+  
+
+  
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.1/css/academicons.min.css" integrity="sha384-FIue+PI4SsI9XfHCz8dBLg33b0c1fMJgNU3X//L26FYbGnlSEfWmNT7zgWc2N9b6" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+  
+  <link id="style-light" href="https://wishawa.github.io/bulma_light.css" rel="stylesheet" media="not(prefers-color-scheme: dark)" />
+  <link id="style-dark" href="https://wishawa.github.io/bulma_dark.css" rel="stylesheet" media="(prefers-color-scheme: dark)" />
+  
+
+  <title>
+    
+Scoped threads in Rust, and why its async counterpart would be unsound | Wisha Wanichwecharungruang
+
+  </title>
+
+  
+  
+  
+
+  
+
+
+</head>
+
+<body>
+  <nav aria-label="section navigation" role="navigation" class="floating-nav">
+      
+      
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;">
+        About
+      </a>
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts">
+        Posts
+      </a>
+      
+      
+      
+      <a class="nav-link" id="dark-mode" title="Switch theme">
+        <span class="icon">
+          <i class="fas fa-adjust"></i>
+        </span>
+      </a>
+  </nav>
+
+  
+  
+
+  
+<section class="section">
+  <div class="container">
+    <div class="columns">
+      <div class="column is-8 is-offset-2">
+        <article class="box">
+          <h1 class="title">
+            Scoped threads in Rust, and why its async counterpart would be unsound
+          </h1>
+          <p class="subtitle"></p>
+          <div class="columns is-multiline is-gapless">
+            <div class="column is-8">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="far fa-calendar-alt"></i>
+  </span>
+  <span><time datetime="2022-11-01">November 01, 2022</time></span>
+</span>
+
+            </div>
+            <div class="column is-4 has-text-right-desktop">
+              
+
+
+            </div>
+            <div class="column">
+              
+              
+<p>
+  Categories:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/categories/tech/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-cube"></i>
+      </span>
+      <span>Tech</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+            <div class="column has-text-right-desktop">
+              
+              
+<p>
+  Tags:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/tags/async-ui/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>Async UI</span>
+    </span>
+  </a>
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/tags/rust/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>Rust</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+          </div>
+          <div class="content mt-2">
+            <p><strong>Disclamer</strong>: This post contains a lot of oversimplification.</p>
+<p><strong>TL; DR</strong>: Scoped threads wait for threads to finish in a loop. Async version can't wait until tasks are finished because futures can be ignored/forgotten.</p>
+<h2 id="fearless-concurrency-with-scoped-threads">Fearless concurrency with scoped threads</h2>
+<p>No standard library API demonstrate Rust's <em>Fearless Concurrency</em> motto better than <code>std::thread::scope</code>.</p>
+<p>Take a look at the example code from <a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/nightly/std/thread/fn.scope.html">the documentation</a>.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> a </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">vec![</span><span style="color:#db9d63;">1</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">2</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">3</span><span style="color:#abb2bf;">];
+</span><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> x </span><span style="color:#adb7c9;">= </span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">thread::scope(|</span><span style="color:#eb6772;">s</span><span style="color:#abb2bf;">| {
+</span><span style="color:#abb2bf;">    s.</span><span style="color:#5ebfcc;">spawn</span><span style="color:#abb2bf;">(|| {
+</span><span style="color:#abb2bf;">        println!(</span><span style="color:#9acc76;">&quot;hello from the first scoped thread&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">        </span><span style="font-style:italic;color:#5f697a;">// We can borrow `a` here.
+</span><span style="color:#abb2bf;">        dbg!(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">a);
+</span><span style="color:#abb2bf;">    });
+</span><span style="color:#abb2bf;">    s.</span><span style="color:#5ebfcc;">spawn</span><span style="color:#abb2bf;">(|| {
+</span><span style="color:#abb2bf;">        println!(</span><span style="color:#9acc76;">&quot;hello from the second scoped thread&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">        </span><span style="font-style:italic;color:#5f697a;">// We can even mutably borrow `x` here,
+</span><span style="color:#abb2bf;">        </span><span style="font-style:italic;color:#5f697a;">// because no other threads are using it.
+</span><span style="color:#abb2bf;">        x </span><span style="color:#adb7c9;">+=</span><span style="color:#abb2bf;"> a[</span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">] </span><span style="color:#adb7c9;">+</span><span style="color:#abb2bf;"> a[</span><span style="color:#db9d63;">2</span><span style="color:#abb2bf;">];
+</span><span style="color:#abb2bf;">    });
+</span><span style="color:#abb2bf;">    println!(</span><span style="color:#9acc76;">&quot;hello from the main thread&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">});
+</span><span style="color:#abb2bf;">
+</span><span style="font-style:italic;color:#5f697a;">// After the scope, we can modify and access our variables again:
+</span><span style="color:#abb2bf;">a.</span><span style="color:#5ebfcc;">push</span><span style="color:#abb2bf;">(</span><span style="color:#db9d63;">4</span><span style="color:#abb2bf;">);
+</span></code></pre>
+<p>We're spawning two scoped threads that <em>borrow and modify the main thread's data</em>.</p>
+<p>In other languages, borrowing and mutating between threads requires great care, and produces memory races if done even subtly wrong. You don't have to worry about such issues in Rust; the Rust compiler prevents all memory race for you.</p>
+<p>Scoped threads was introduced in 2015. Unfortunately, that first version <a rel="noopener nofollow" target="_blank" href="https://github.com/rust-lang/rust/issues/24292">was unsound</a> and had to be removed before Rust reached 1.0. Recently, the API was redesigned and had since been added to the standard library of Rust 1.63 (released August 2022) onward.</p>
+<p>Let's examine how it works...</p>
+<h2 id="controlling-threads-lifetimes">Controlling threads' lifetimes</h2>
+<p>Borrows in Rust have lifetimes. <code>thread::scope</code> allows your threads to borrow data from the main thread for a lifetime of <code>'life</code>.</p>
+<p>In the example code shown earlier, <code>'life</code> would be a segment in the code. Like this</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> a </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">vec![</span><span style="color:#db9d63;">1</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">2</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">3</span><span style="color:#abb2bf;">];
+</span><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> x </span><span style="color:#adb7c9;">= </span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="font-style:italic;color:#5f697a;">// ------------------+
+</span><span style="font-style:italic;color:#5f697a;">//                   |
+</span><span style="font-style:italic;color:#5f697a;">//   this is &#39;life   |
+</span><span style="font-style:italic;color:#5f697a;">//                   |
+</span><span style="font-style:italic;color:#5f697a;">// ------------------+
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">a.</span><span style="color:#5ebfcc;">push</span><span style="color:#abb2bf;">(</span><span style="color:#db9d63;">4</span><span style="color:#abb2bf;">);
+</span></code></pre>
+<p>To use scoped threads, you first create closures with lifetime not smaller than <code>'life</code>. Rust's usual lifetime rules apply here: within <code>'life</code>, your closures can't borrow things that someone else is mutating or mutate things that someone else is borrowing.</p>
+<p>The job of <code>thread::scope</code> is to spawn your closures into threads. The closures are only guaranteed to be valid within <code>'life</code>, so these threads <strong>must start and end within <code>'life</code></strong>.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> a </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">vec![</span><span style="color:#db9d63;">1</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">2</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">3</span><span style="color:#abb2bf;">];
+</span><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> x </span><span style="color:#adb7c9;">= </span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="color:#cd74e8;">let </span><span style="color:#5cb3fa;">my_closure_1 </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">|| { </span><span style="font-style:italic;color:#5f697a;">/* ... */ </span><span style="color:#abb2bf;">};
+</span><span style="color:#cd74e8;">let </span><span style="color:#5cb3fa;">my_closure_2 </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">|| { </span><span style="font-style:italic;color:#5f697a;">/* ... */ </span><span style="color:#abb2bf;">};
+</span><span style="color:#abb2bf;">
+</span><span style="font-style:italic;color:#5f697a;">//            start of &#39;life
+</span><span style="font-style:italic;color:#5f697a;">// -------------------------------------
+</span><span style="font-style:italic;color:#5f697a;">//    -- spawn the closures here! --    
+</span><span style="font-style:italic;color:#5f697a;">//                                      
+</span><span style="font-style:italic;color:#5f697a;">//                 ...                  
+</span><span style="font-style:italic;color:#5f697a;">//                                      
+</span><span style="font-style:italic;color:#5f697a;">//   -- make sure they end by here --   
+</span><span style="font-style:italic;color:#5f697a;">// -------------------------------------
+</span><span style="font-style:italic;color:#5f697a;">//             end of &#39;life
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">a.</span><span style="color:#5ebfcc;">push</span><span style="color:#abb2bf;">(</span><span style="color:#db9d63;">4</span><span style="color:#abb2bf;">);
+</span></code></pre>
+<p>The start part is easy enough: just spawn the closures! The end part is harder: <code>thread::scope</code> must ensure that the we don't progress beyond <code>'life</code> before all the threads have finished.</p>
+<p>To accomplish this, <code>thread::scope</code> gives you a <a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/stable/std/thread/struct.Scope.html">Scope</a> object called <strong>s</strong>. To spawn each closure, you do <code>s.spawn(closure)</code>. This spawns the closure into a thread, and <em>records the existence of that thread within</em> <strong>s</strong>.</p>
+<p>Once all the threads have been spawned, <code>thread::scope</code> will go into <a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/1.64.0/src/std/thread/scoped.rs.html#149">an infinite loop</a>. It will only break from this loop once all the threads spawned by <strong>s</strong> have completed.</p>
+<p>At this point we know that all the spawned closures have been dropped. The work of <code>thread::scope</code> is done. It returns. We exit the lifetime <code>'life</code>.</p>
+<p>Overall, expanding <code>thread::scope</code> would give something like this</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> a </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">vec![</span><span style="color:#db9d63;">1</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">2</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">3</span><span style="color:#abb2bf;">];
+</span><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> x </span><span style="color:#adb7c9;">= </span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="color:#cd74e8;">let </span><span style="color:#5cb3fa;">my_closure_1 </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">|| { </span><span style="font-style:italic;color:#5f697a;">/* ... */ </span><span style="color:#abb2bf;">};
+</span><span style="color:#cd74e8;">let </span><span style="color:#5cb3fa;">my_closure_2 </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">|| { </span><span style="font-style:italic;color:#5f697a;">/* ... */ </span><span style="color:#abb2bf;">};
+</span><span style="color:#abb2bf;">
+</span><span style="font-style:italic;color:#5f697a;">//           start of &#39;life
+</span><span style="font-style:italic;color:#5f697a;">// --------------------------------------
+</span><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> s </span><span style="color:#adb7c9;">= </span><span style="font-style:italic;color:#5f697a;">/* ... */</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">s.</span><span style="color:#5ebfcc;">spawn</span><span style="color:#abb2bf;">(my_closure_1);
+</span><span style="color:#abb2bf;">s.</span><span style="color:#5ebfcc;">spawn</span><span style="color:#abb2bf;">(my_closure_2);
+</span><span style="color:#abb2bf;">
+</span><span style="color:#cd74e8;">while</span><span style="color:#abb2bf;"> s.</span><span style="color:#5ebfcc;">num_remaining_threads</span><span style="color:#abb2bf;">() </span><span style="color:#adb7c9;">&gt; </span><span style="color:#db9d63;">0 </span><span style="color:#abb2bf;">{}
+</span><span style="font-style:italic;color:#5f697a;">// --------------------------------------
+</span><span style="font-style:italic;color:#5f697a;">//            end of &#39;life
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">a.</span><span style="color:#5ebfcc;">push</span><span style="color:#abb2bf;">(</span><span style="color:#db9d63;">4</span><span style="color:#abb2bf;">);
+</span></code></pre>
+<h2 id="async-version-of-scoped-threads">Async version of scoped threads</h2>
+<h3 id="what-s-a-future">What's a future?</h3>
+<p>A <a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/std/future/trait.Future.html">future</a> is like a pausable closure. It gets <em>polled</em>, driving it to run some code. It then <em>pauses</em> to wait for something to happen. When that thing happens, the future gets polled again and runs more code...</p>
+<h3 id="what-s-a-task">What's a task?</h3>
+<p>Tasks are the async equivalent of threads. They are futures that have been placed under control of the <em>executor</em>. The executor will schedule and execute tasks, similar to how the OS schedule and execute threads.</p>
+<h3 id="envisioning-scoped-tasks">Envisioning scoped tasks</h3>
+<p>An async version of <code>thread::scope</code> would probably look something like this</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> a </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">vec![</span><span style="color:#db9d63;">1</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">2</span><span style="color:#abb2bf;">, </span><span style="color:#db9d63;">3</span><span style="color:#abb2bf;">];
+</span><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> x </span><span style="color:#adb7c9;">= </span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="color:#5ebfcc;">scoped_tasks</span><span style="color:#abb2bf;">(|</span><span style="color:#eb6772;">s</span><span style="color:#abb2bf;">| {
+</span><span style="color:#abb2bf;">    </span><span style="font-style:italic;color:#5f697a;">// spawn a task for the executor to run
+</span><span style="color:#abb2bf;">    s.</span><span style="color:#5ebfcc;">spawn</span><span style="color:#abb2bf;">(async { </span><span style="font-style:italic;color:#5f697a;">// &lt;-- a future instead of a closure
+</span><span style="color:#abb2bf;">        println!(</span><span style="color:#9acc76;">&quot;hello from the first scoped task&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">        dbg!(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">a);
+</span><span style="color:#abb2bf;">    });
+</span><span style="color:#abb2bf;">    s.</span><span style="color:#5ebfcc;">spawn</span><span style="color:#abb2bf;">(async {
+</span><span style="color:#abb2bf;">        println!(</span><span style="color:#9acc76;">&quot;hello from the second scoped task&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">        x </span><span style="color:#adb7c9;">+=</span><span style="color:#abb2bf;"> a[</span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">] </span><span style="color:#adb7c9;">+</span><span style="color:#abb2bf;"> a[</span><span style="color:#db9d63;">2</span><span style="color:#abb2bf;">];
+</span><span style="color:#abb2bf;">    });
+</span><span style="color:#abb2bf;">    println!(</span><span style="color:#9acc76;">&quot;hello from the main future&quot;</span><span style="color:#abb2bf;">);
+</span><span style="color:#abb2bf;">}).await; </span><span style="font-style:italic;color:#5f697a;">// &lt;-- note the await
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">a.</span><span style="color:#5ebfcc;">push</span><span style="color:#abb2bf;">(</span><span style="color:#db9d63;">4</span><span style="color:#abb2bf;">);
+</span></code></pre>
+<p>It spawns futures as tasks instead of closures as threads. And note that we need to await it at the end.</p>
+<p>Those familiar with async Rust would notice that this looks very similar to <a rel="noopener nofollow" target="_blank" href="https://docs.rs/futures/latest/futures/future/fn.join.html">joining futures</a>. Internally, though, it is different. By spawning the futures to the executor, we can <a rel="noopener nofollow" target="_blank" href="https://www.reddit.com/r/rust/comments/ym45s6/comment/iv1xt2r/?utm_source=share&amp;utm_medium=web2x&amp;context=3">get asymptotically better performance</a> compared to joining.</p>
+<h2 id="unsoundness-of-scoped-tasks">Unsoundness of scoped tasks</h2>
+<p>Unfortunately, <code>scoped_tasks</code> as envisioned provides an unsound API. How so? Let's demonstrate by abusing the function step-by-step.</p>
+<hr />
+<p>First, we create a future <code>fut_1</code> that we want to spawn. Let's assume the lifetime of <code>fut_1</code> ends at the same point as <code>'life</code> (i.e. <code>fut_1</code> must be dropped before <code>'life</code> ends).</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> fut_1 </span><span style="color:#adb7c9;">=</span><span style="color:#abb2bf;"> async { </span><span style="font-style:italic;color:#5f697a;">/* ... */ </span><span style="color:#abb2bf;">};
+</span></code></pre>
+<hr />
+<p>Then, let the lifetime <code>'life</code> start...</p>
+<hr />
+<p>We then call <code>scoped_tasks</code>. This is an async function, so it returns a future. Let's call this future <strong>x</strong>.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> x </span><span style="color:#adb7c9;">= </span><span style="color:#5ebfcc;">scoped_tasks</span><span style="color:#abb2bf;">(|</span><span style="color:#eb6772;">s</span><span style="color:#abb2bf;">| {
+</span><span style="color:#abb2bf;">	s.</span><span style="color:#5ebfcc;">spawn</span><span style="color:#abb2bf;">(fut_1);
+</span><span style="color:#abb2bf;">});
+</span></code></pre>
+<hr />
+<p>Usually, we would now do <code>x.await</code> to let the future be polled to completion automatically.</p>
+<p>Instead, to demonstrate unsoundness, we will poll <strong>x</strong> manually.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#5f697a;">// x.await; &lt;-- what we usually do
+</span><span style="color:#abb2bf;">x.</span><span style="color:#5ebfcc;">poll</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">...</span><span style="color:#abb2bf;">);
+</span></code></pre>
+<p>This will cause the future <strong>x</strong> to do work. In this case, it spawns <code>fut_1</code>.</p>
+<hr />
+<p>The future <strong>x</strong> is now waiting for the spawned task of <code>fut_1</code> to complete. In the sync version, we would loop until the threads complete.</p>
+<p>In async Rust, running an idle infinite loop for a long time is a bad idea; it &quot;blocks the executor&quot;. Instead of looping, our future <strong>x</strong> must pause and wait to be polled again once the spawned tasks have completed.</p>
+<p>This is the critical step where the problem arises. Our future <strong>x</strong> pauses to wait, <strong>but there is nothing to guarantee that the rest of the program will respect x's decision to pause!</strong> While <strong>x</strong> is paused, other parts of the program could do all sorts of things. There is no guarantee that the rest of the program would even honor <strong>x</strong>'s request to be polled again once the tasks have completed!</p>
+<hr />
+<p>That's exactly how we'll bring out the unsoundness. Instead of waiting and polling <strong>x</strong> again at the appropriate time, let's just <strong>not care about x anymore</strong>. We're not going to wait for the spawned task to complete. We're not going to poll <strong>x</strong> again.</p>
+<hr />
+<p>Our code simply progresses forward to the end of <code>'life</code>.</p>
+<hr />
+<p>See the unsoundness? The future <code>fut_1</code> is only guaranteed to last within <code>'life</code>. We have gone beyond the end of <code>'life</code>, yet the task of <code>fut_1</code> is still running in the executor. We're running <code>fut_1</code> beyond it's lifetime!</p>
+<h2 id="dealing-with-the-unsoundness">Dealing with the unsoundness</h2>
+<p>First, it's not so bad. As you can see, the process to bring out the unsoundness of scoped tasks is pretty contrived. The &quot;manually poll <strong>x</strong>&quot; step is not something you do in everyday code.</p>
+<p>Still, unsound is unsound. We can't just expose <code>scoped_tasks</code> as a safe function and expect people to use it the correct way.</p>
+<h3 id="alternative-solutions">Alternative solutions</h3>
+<p>The easiest fix is to simply expose the function as unsafe, and document that user must not ignore the future returned from the function.</p>
+<p>Another solution is to make scoped tasks work more similarly to scoped threads, specifically by making it use a loop to wait. This is in essence the approach taken by the <a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/async-scoped">async-scoped crate</a>.</p>
+<p>But as mentioned, looping like this &quot;blocks the executor&quot; and removes many benefits of async. This can become a real issue if you need to use scoped tasks in many places, or if you are in an environment such as browser WASM, where blocking is totally unacceptable.</p>
+<h3 id="new-approach-scoped-async-spawn">New approach: scoped_async_spawn</h3>
+<p><a rel="noopener nofollow" target="_blank" href="https://wishawa.github.io/posts/async-ui-intro/">Async UI</a> faces both of the aforementioned issues: it needs to spawn a task for every UI component, and also be able to run in the browser. To make Async UI work, I made <a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/scoped-async-spawn">scoped_async_spawn</a>, which uses <a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/std/pin/struct.Pin.html">Pin</a> and runtime checks to make sure that the spawning future (the <strong>x</strong> in our example) can't be ignored.</p>
+<p>The mechanism of scoped_async_spawn is a blog-post worth of content in itself, so I'll make a separate post about it soon. Stay tuned!</p>
+<p>Discuss this post on <a rel="noopener nofollow" target="_blank" href="https://www.reddit.com/r/rust/comments/ym45s6/blog_post_scoped_threads_in_rust_and_why_its/">Reddit</a>.</p>
+
+          </div>
+        </article>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+  
+  
+  
+
+  
+
+
+  
+  
+
+<!--section class="section pt-0">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8 is-offset-2 mx-4">
+        <article class="box message p-0">
+          <div class="message-header">
+            Advertisement
+          </div>
+          <div class="message-body">
+            I'm looking for summer internships.
+            Please <a href="/">get in touch</a> if you're interested in hiring me!
+          </div>
+        <article>
+      </div>
+    </div>
+  </div>
+</section-->
+
+
+
+  
+  <footer class="footer py-4">    
+    <div class="content has-text-centered">
+      <p>
+        website powered by Zola + DeepThought theme
+      </p>
+    </div>
+  </footer>
+  
+
+  
+  
+  
+  <script src="https://wishawa.github.io/js/site.js"></script>
+
+  
+
+
+
+
+
+  
+  
+</body>
+
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="manifest" href="/icons/site.webmanifest">
+  <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/icons/favicon.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="/icons/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex">
+  
+  <meta http-equiv="refresh" content="0; url=https://wisha.page&#x2F;posts&#x2F;fun-rust-operators&#x2F;">
+  
+
+
+
+  
+
+  
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.1/css/academicons.min.css" integrity="sha384-FIue+PI4SsI9XfHCz8dBLg33b0c1fMJgNU3X//L26FYbGnlSEfWmNT7zgWc2N9b6" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+  
+  <link id="style-light" href="https://wishawa.github.io/bulma_light.css" rel="stylesheet" media="not(prefers-color-scheme: dark)" />
+  <link id="style-dark" href="https://wishawa.github.io/bulma_dark.css" rel="stylesheet" media="(prefers-color-scheme: dark)" />
+  
+
+  <title>
+    
+Six fun things to do with Rust operator overloading | Wisha Wanichwecharungruang
+
+  </title>
+
+  
+  
+  
+
+  
+
+
+</head>
+
+<body>
+  <nav aria-label="section navigation" role="navigation" class="floating-nav">
+      
+      
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;">
+        About
+      </a>
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts">
+        Posts
+      </a>
+      
+      
+      
+      <a class="nav-link" id="dark-mode" title="Switch theme">
+        <span class="icon">
+          <i class="fas fa-adjust"></i>
+        </span>
+      </a>
+  </nav>
+
+  
+  
+
+  
+<section class="section">
+  <div class="container">
+    <div class="columns">
+      <div class="column is-8 is-offset-2">
+        <article class="box">
+          <h1 class="title">
+            Six fun things to do with Rust operator overloading
+          </h1>
+          <p class="subtitle">abusing overloading to make custom syntax and more...</p>
+          <div class="columns is-multiline is-gapless">
+            <div class="column is-8">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="far fa-calendar-alt"></i>
+  </span>
+  <span><time datetime="2023-01-19">January 19, 2023</time></span>
+</span>
+
+            </div>
+            <div class="column is-4 has-text-right-desktop">
+              
+
+
+            </div>
+            <div class="column">
+              
+              
+<p>
+  Categories:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/categories/tech/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-cube"></i>
+      </span>
+      <span>Tech</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+            <div class="column has-text-right-desktop">
+              
+              
+<p>
+  Tags:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/tags/rust/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>Rust</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+          </div>
+          <div class="content mt-2">
+            <p><img src="https://wishawa.github.io/posts/fun-rust-operators/dot-product-pooh.jpg" alt="Winnie the Pooh meme: the regular Pooh has at dot_product([1.2, 3.6, 2.2], [4.0, 5.0, 6.1]) while the suit one has [1.2, 3.6, 2.2] *dot* [4.0, 5.0, 6.1]" /></p>
+<p><em>I am <strong>not</strong> endorsing the code in this post.</em></p>
+<h2 id="c-input-output">C++ Input/Output</h2>
+<p>Instead of</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#5ebfcc;">stdin</span><span style="color:#abb2bf;">().</span><span style="color:#5ebfcc;">read_line</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#cd74e8;">mut</span><span style="color:#abb2bf;"> buffer).</span><span style="color:#5ebfcc;">unwrap</span><span style="color:#abb2bf;">();
+</span><span style="color:#abb2bf;">println!(</span><span style="color:#9acc76;">&quot;Hello I am </span><span style="color:#db9d63;">{name}</span><span style="color:#9acc76;">!!!&quot;</span><span style="color:#abb2bf;">);
+</span></code></pre>
+<p>we can overload the shift operators on <code>cin</code> and <code>cout</code> to allow</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">cin </span><span style="color:#adb7c9;">&gt;&gt; &amp;</span><span style="color:#cd74e8;">mut</span><span style="color:#abb2bf;"> buffer;
+</span><span style="color:#abb2bf;">cout </span><span style="color:#adb7c9;">&lt;&lt; </span><span style="color:#9acc76;">&quot;Hello I am &quot; </span><span style="color:#adb7c9;">&lt;&lt;</span><span style="color:#abb2bf;"> name </span><span style="color:#adb7c9;">&lt;&lt; </span><span style="color:#9acc76;">&quot;!!!&quot; </span><span style="color:#adb7c9;">&lt;&lt;</span><span style="color:#abb2bf;"> endl;
+</span></code></pre>
+<h2 id="variadic-functions">Variadic Functions</h2>
+<p>Instead of</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">std::cmp::max(x, y);
+</span><span style="color:#abb2bf;">[w, x, y, z].</span><span style="color:#5ebfcc;">into_iter</span><span style="color:#abb2bf;">().</span><span style="color:#5ebfcc;">max</span><span style="color:#abb2bf;">();
+</span></code></pre>
+<p>we can make</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#5f697a;">// max+ is like std::cmp::max but better
+</span><span style="font-style:italic;color:#5f697a;">// it supports &gt;2 arguments
+</span><span style="color:#abb2bf;">max</span><span style="color:#adb7c9;">+</span><span style="color:#abb2bf;">(x, y);
+</span><span style="color:#abb2bf;">max</span><span style="color:#adb7c9;">+</span><span style="color:#abb2bf;">(w, x, y, z);
+</span></code></pre>
+<h2 id="more-concise-builders">More Concise Builders</h2>
+<p>Here's a more serious one. Builder pattern sometimes involve a lot of repeated method calls. Take for example this usage of the <a rel="noopener nofollow" target="_blank" href="https://github.com/seanmonstar/warp">warp web framework</a>.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> hi </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">warp::path(</span><span style="color:#9acc76;">&quot;hello&quot;</span><span style="color:#abb2bf;">)
+</span><span style="color:#abb2bf;">    .</span><span style="color:#5ebfcc;">and</span><span style="color:#abb2bf;">(warp::path::param())
+</span><span style="color:#abb2bf;">    .</span><span style="color:#5ebfcc;">and</span><span style="color:#abb2bf;">(warp::header(</span><span style="color:#9acc76;">&quot;user-agent&quot;</span><span style="color:#abb2bf;">))
+</span><span style="color:#abb2bf;">    .</span><span style="color:#5ebfcc;">map</span><span style="color:#abb2bf;">(|</span><span style="color:#eb6772;">param</span><span style="color:#abb2bf;">: String, </span><span style="color:#eb6772;">agent</span><span style="color:#abb2bf;">: String| {
+</span><span style="color:#abb2bf;">        format!(</span><span style="color:#9acc76;">&quot;Hello </span><span style="color:#db9d63;">{}</span><span style="color:#9acc76;">, whose agent is </span><span style="color:#db9d63;">{}</span><span style="color:#9acc76;">&quot;</span><span style="color:#abb2bf;">, param, agent)
+</span><span style="color:#abb2bf;">    });
+</span></code></pre>
+<p>What if the API look like this instead?</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> hi </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">warp::path(</span><span style="color:#9acc76;">&quot;hello&quot;</span><span style="color:#abb2bf;">)
+</span><span style="color:#abb2bf;">	</span><span style="color:#adb7c9;">+	</span><span style="color:#abb2bf;">warp::path::param()
+</span><span style="color:#abb2bf;">	</span><span style="color:#adb7c9;">+	</span><span style="color:#abb2bf;">warp::header(</span><span style="color:#9acc76;">&quot;user-agent&quot;</span><span style="color:#abb2bf;">)
+</span><span style="color:#abb2bf;">	</span><span style="color:#adb7c9;">&gt;&gt;	|</span><span style="color:#abb2bf;">param: String, agent: String</span><span style="color:#adb7c9;">| </span><span style="color:#abb2bf;">{
+</span><span style="color:#abb2bf;">			format!(</span><span style="color:#9acc76;">&quot;Hello </span><span style="color:#db9d63;">{}</span><span style="color:#9acc76;">, whose agent is </span><span style="color:#db9d63;">{}</span><span style="color:#9acc76;">&quot;</span><span style="color:#abb2bf;">, param, agent)
+</span><span style="color:#abb2bf;">		};
+</span></code></pre>
+<h2 id="infix-functions">Infix Functions</h2>
+<p>Instead of</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">x.</span><span style="color:#5ebfcc;">pow</span><span style="color:#abb2bf;">(y);
+</span><span style="color:#5ebfcc;">dot_product</span><span style="color:#abb2bf;">(a, b);
+</span><span style="color:#abb2bf;">a.</span><span style="color:#5ebfcc;">cross</span><span style="color:#abb2bf;">(b.</span><span style="color:#5ebfcc;">cross</span><span style="color:#abb2bf;">(c).</span><span style="color:#5ebfcc;">cross</span><span style="color:#abb2bf;">(d))
+</span></code></pre>
+<p>we can make</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">x </span><span style="color:#adb7c9;">^</span><span style="color:#abb2bf;">pow</span><span style="color:#adb7c9;">^</span><span style="color:#abb2bf;"> y;
+</span><span style="color:#abb2bf;">a </span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;">dot</span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;"> b;
+</span><span style="color:#abb2bf;">a </span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;">cross</span><span style="color:#adb7c9;">* </span><span style="color:#abb2bf;">(b </span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;">cross</span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;"> c </span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;">cross</span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;"> d);
+</span></code></pre>
+<p><a rel="noopener nofollow" target="_blank" href="https://github.com/rust-lang/rfcs/issues/1579">Lots of people</a> wanted this!</p>
+<h2 id="doublefish">Doublefish</h2>
+<p><code>std::mem</code> provides these functions</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">size_of::&lt;T&gt;();
+</span><span style="color:#5ebfcc;">size_of_val</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">value);
+</span></code></pre>
+<p>Turbofish enthusiasts would enjoy <code>size_of</code> but not so much <code>size_of_val</code>, so let's make our own improved version of <code>size_of_val</code> that's more turbofishy</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">size_of::&lt;T&gt;();
+</span><span style="color:#abb2bf;">size_of_val&lt;&lt;</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">value&gt;&gt;();
+</span></code></pre>
+<h2 id="join-and-race">Join and Race</h2>
+<p>Futures combinators can have short-circuiting behaviors</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="font-style:italic;color:#5f697a;">// quit if any of the 3 errors
+</span><span style="color:#abb2bf;">(fut1, fut2, fut3).</span><span style="color:#5ebfcc;">try_join</span><span style="color:#abb2bf;">().await;
+</span><span style="color:#abb2bf;">
+</span><span style="font-style:italic;color:#5f697a;">// quit if any of the 3 succeeds
+</span><span style="color:#abb2bf;">(fut4, fut5, fut6).</span><span style="color:#5ebfcc;">race_ok</span><span style="color:#abb2bf;">().await;
+</span></code></pre>
+<p>let's communicate this through <code>&amp;</code> and <code>|</code></p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">(TryJoin </span><span style="color:#adb7c9;">&gt;&gt;</span><span style="color:#abb2bf;"> fut1 </span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;"> fut2 </span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;"> fut3).await;
+</span><span style="color:#abb2bf;">(RaceOk </span><span style="color:#adb7c9;">&gt;&gt;</span><span style="color:#abb2bf;"> fut4 </span><span style="color:#adb7c9;">|</span><span style="color:#abb2bf;"> fut5 </span><span style="color:#adb7c9;">|</span><span style="color:#abb2bf;"> fut6).await;
+</span></code></pre>
+<h1 id="useful-links">Useful Links</h1>
+<ul>
+<li><a rel="noopener nofollow" target="_blank" href="https://www.reddit.com/r/rust/comments/10golkq">Discuss this on Reddit</a></li>
+<li><a rel="noopener nofollow" target="_blank" href="https://play.rust-lang.org/?version=stable&amp;mode=debug&amp;edition=2021&amp;gist=71da59351b0988249a69014e6b191353">Playground</a> containing the implementations behind some of the code shown here</li>
+<li><a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/std/ops/index.html">std::ops docs</a></li>
+<li><a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/reference/expressions.html#expression-precedence">Rust operators precedence table</a></li>
+</ul>
+
+          </div>
+        </article>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+  
+  
+  
+
+  
+
+
+  
+  
+
+
+
+
+  
+  <footer class="footer py-4">    
+    <div class="content has-text-centered">
+      <p>
+        website powered by Zola + DeepThought theme
+      </p>
+    </div>
+  </footer>
+  
+
+  
+  
+  
+  <script src="https://wishawa.github.io/js/site.js"></script>
+
+  
+
+
+
+
+
+  
+  
+</body>
+
+</html>

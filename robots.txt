@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: https://wishawa.github.io/sitemap.xml

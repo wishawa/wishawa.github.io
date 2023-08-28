@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="manifest" href="/icons/site.webmanifest">
+  <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/icons/favicon.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="/icons/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex">
+  
+  <meta http-equiv="refresh" content="0; url=https://wisha.page&#x2F;posts&#x2F;enjoin&#x2F;">
+  
+
+
+
+  
+
+  
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.1/css/academicons.min.css" integrity="sha384-FIue+PI4SsI9XfHCz8dBLg33b0c1fMJgNU3X//L26FYbGnlSEfWmNT7zgWc2N9b6" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+  
+  <link id="style-light" href="https://wishawa.github.io/bulma_light.css" rel="stylesheet" media="not(prefers-color-scheme: dark)" />
+  <link id="style-dark" href="https://wishawa.github.io/bulma_dark.css" rel="stylesheet" media="(prefers-color-scheme: dark)" />
+  
+
+  <title>
+    
+A syntax-level async join macro supporting branching control flow and synchronous shared mutable borrowing | Wisha Wanichwecharungruang
+
+  </title>
+
+  
+  
+  
+
+  
+
+
+</head>
+
+<body>
+  <nav aria-label="section navigation" role="navigation" class="floating-nav">
+      
+      
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;">
+        About
+      </a>
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts">
+        Posts
+      </a>
+      
+      
+      
+      <a class="nav-link" id="dark-mode" title="Switch theme">
+        <span class="icon">
+          <i class="fas fa-adjust"></i>
+        </span>
+      </a>
+  </nav>
+
+  
+  
+
+  
+<section class="section">
+  <div class="container">
+    <div class="columns">
+      <div class="column is-8 is-offset-2">
+        <article class="box">
+          <h1 class="title">
+            A syntax-level async join macro supporting branching control flow and synchronous shared mutable borrowing
+          </h1>
+          <p class="subtitle"></p>
+          <div class="columns is-multiline is-gapless">
+            <div class="column is-8">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="far fa-calendar-alt"></i>
+  </span>
+  <span><time datetime="2023-04-09">April 09, 2023</time></span>
+</span>
+
+            </div>
+            <div class="column is-4 has-text-right-desktop">
+              
+
+
+            </div>
+            <div class="column">
+              
+              
+<p>
+  Categories:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/categories/tech/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-cube"></i>
+      </span>
+      <span>Tech</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+            <div class="column has-text-right-desktop">
+              
+              
+<p>
+  Tags:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/tags/rust/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>Rust</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+          </div>
+          <div class="content mt-2">
+            <p>The macro is called <em>enjoin</em>. It is <a rel="noopener nofollow" target="_blank" href="https://github.com/wishawa/enjoin">on GitHub here</a> and <a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/enjoin">on crates.io here</a>.</p>
+<h2 id="existing-join-implementations">Existing join implementations</h2>
+<p>All the async join implementations out there
+(including
+<a rel="noopener nofollow" target="_blank" href="https://docs.rs/futures/latest/futures/macro.join.html">futures'</a>,
+<a rel="noopener nofollow" target="_blank" href="https://docs.rs/tokio/latest/tokio/macro.join.html">tokio's</a>, <a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/std/future/macro.join.html">nightly stdlib's</a> and
+<a rel="noopener nofollow" target="_blank" href="https://docs.rs/futures-concurrency/latest/futures_concurrency/future/trait.Join.html">futures-concurrency</a>)
+work on top of the <em>Future</em> abstraction; if you want to join pieces of async code, you pass them in as async blocks, which get converted to <em>Future</em> objects automatically.</p>
+<p>The problem is that <strong>async blocks are not simply blocks of async code</strong>. They behave much more like closures than blocks. Converting regular blocks of async code to async blocks means</p>
+<ul>
+<li>
+<p>We lose the ability to jump out with branching control flow (<code>break</code>/<code>continue</code>).</p>
+  <details>
+  <summary>
+<p>Example code</p>
+  </summary>
+  <b class="compile-fail-code-label has-text-danger">
+	<span class="icon">
+		<i class="fas fa-exclamation-circle"></i>
+	</span>
+	this code does not compile
+</b>
+
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">loop </span><span style="color:#abb2bf;">{
+</span><span style="color:#abb2bf;">	futures::join</span><span style="color:#adb7c9;">!</span><span style="color:#abb2bf;">(
+</span><span style="color:#abb2bf;">		async {
+</span><span style="color:#abb2bf;">			</span><span style="color:#cd74e8;">if </span><span style="color:#5ebfcc;">should_break</span><span style="color:#abb2bf;">().await {
+</span><span style="color:#abb2bf;">				</span><span style="font-style:italic;color:#5f697a;">// [E0267]: `break` inside of an `async` block
+</span><span style="color:#abb2bf;">				</span><span style="color:#cd74e8;">break</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">			}
+</span><span style="color:#abb2bf;">		},
+</span><span style="color:#abb2bf;">		async {
+</span><span style="color:#abb2bf;">			</span><span style="font-style:italic;color:#5f697a;">// ...
+</span><span style="color:#abb2bf;">		}
+</span><span style="color:#abb2bf;">	);
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+  </details>
+</li>
+<li>
+<p>Error propagation (with <code>?</code>) becomes more difficult.</p>
+  <details>
+  <summary>
+<p>Example code</p>
+  </summary>
+<b class="compile-fail-code-label has-text-danger">
+	<span class="icon">
+		<i class="fas fa-exclamation-circle"></i>
+	</span>
+	this code does not compile
+</b>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">futures::join</span><span style="color:#adb7c9;">!</span><span style="color:#abb2bf;">(
+</span><span style="color:#abb2bf;">	async {
+</span><span style="color:#abb2bf;">		</span><span style="font-style:italic;color:#5f697a;">// [E0277]: the `?` operator can only be used in an async block that returns `Result` or `Option`
+</span><span style="color:#abb2bf;">		</span><span style="color:#5ebfcc;">do_thing</span><span style="color:#abb2bf;">().await</span><span style="color:#adb7c9;">?</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">	},
+</span><span style="color:#abb2bf;">	</span><span style="font-style:italic;color:#5f697a;">// ...
+</span><span style="color:#abb2bf;">);
+</span></code></pre>
+  </details>
+</li>
+<li>
+<p><a id="closure-lifetime-issue"></a>All our variables' lifetimes get replaced by the opaque, encompassing lifetime of the async block. This same inconvenience <a rel="noopener nofollow" target="_blank" href="https://stackoverflow.com/questions/49703990/cant-borrow-mutably-within-two-different-closures-in-the-same-scope">frequently</a> <a rel="noopener nofollow" target="_blank" href="https://stackoverflow.com/questions/64947703/a-variable-modified-by-two-closures">comes</a> <a rel="noopener nofollow" target="_blank" href="https://users.rust-lang.org/t/is-there-a-nicer-way-to-have-two-closures-have-mutable-access-to-the-same-variable/46311">up</a> when working with closures.</p>
+</li>
+</ul>
+<h2 id="syntax-level-join">Syntax-level join</h2>
+<p>The first step to avoiding async blocks and the associated annoyances is to come up with a new API for concurrency. The <em>enjoin</em> library pretends not to operate on <em>Future</em> objects. The macro instead takes in regular blocks of code, and, as far as the user is concerned, magically run those blocks concurrently.</p>
+<p>Of course the actual implementation is not magic. The macro still secretly transforms the blocks into async blocks so they can be polled concurrently. What is special is that the transformation does much more than just adding the word <code>async</code>...</p>
+<h3 id="branching-statements">Branching statements</h3>
+<p>To make branching statements (<code>break '_</code>, <code>continue '_</code>, <code>?</code>, <code>return</code>) work from inside async blocks, we replace each of them with a statement to return a special enum variant. The polling code can then match the returned enum and perform the branching.</p>
+<h3 id="shared-mutable-borrows">Shared mutable borrows</h3>
+<p>We also let async blocks share mutable borrows as long as they don't cross any await yieldpoint. This is done by parsing through all the blocks to find shared borrows, and putting all those in a RefCell. Each block being joined keeps the RefCell locked for itself during its synchronous execution, unlocking and relocking across yieldpoints. Since joining is concurrent rather than parallel, only one block can be executing synchronously at a time, so the RefCell will not panic (it can almost be an UnsafeCell - more on that in the <a href="https://wishawa.github.io/posts/enjoin/#limitations">limitations</a> section below).</p>
+<details>
+<summary>
+<p>Is automatic RefCell-ing horrible design?</p>
+</summary>
+<p>Indiscriminate automatic RefCell-ing is definitely horrible, but that isn't what we're doing here. What <em>enjoin</em> is doing is merely working around the issue mentioned <a href="#closure-lifetime-issue">above</a>. This workaround is completely internal; <em>enjoin</em> could <a rel="noopener nofollow" target="_blank" href="https://rust-lang.github.io/wg-async/vision/submitted_stories/status_quo/barbara_wants_to_use_ghostcell.html">switch to GhostCell in the future</a> and users won't notice anything (in fact, being compatible with GhostCell is another indication that our use of RefCell is well under control).</p>
+<p>From the user's perspective, <em>enjoin</em>'s borrowing behavior can be seen as an extremely twisted extension to non-lexical lifetimes: lifetime follows execution, not lexical scope; joinee blocks are executed in lockstep, so the borrow lifetimes follow that.</p>
+</details>
+<p>Since this feature has imperfect implementation (more about that <a href="https://wishawa.github.io/posts/enjoin/#limitations">below</a>), it is made optional. Use <code>enjoin::join_auto_borrow!</code> if you want it; use <code>enjoin::join!</code> if you don't.</p>
+<h2 id="try-join-race-try-race-and-select"><code>try_join!</code>, <code>race!</code>, <code>try_race!</code>, and <code>select!</code></h2>
+<p>A nice effect of having branching statements is that <em>enjoin</em> does not need to provide racing or fallible variants; such behaviors are already possible with <code>enjoin::join!</code>. Here's an example use of <em>enjoin</em> for racing futures.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> res </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">&#39;race: {
+</span><span style="color:#abb2bf;">	enjoin::join</span><span style="color:#adb7c9;">!</span><span style="color:#abb2bf;">(
+</span><span style="color:#abb2bf;">		{ </span><span style="color:#cd74e8;">break &#39;race </span><span style="color:#5ebfcc;">work_1</span><span style="color:#abb2bf;">().await },
+</span><span style="color:#abb2bf;">		{ </span><span style="color:#cd74e8;">break &#39;race </span><span style="color:#5ebfcc;">work_2</span><span style="color:#abb2bf;">().await }
+</span><span style="color:#abb2bf;">	);
+</span><span style="color:#abb2bf;">};
+</span></code></pre>
+<details>
+<summary>
+<p>What would fallible join (<code>try_join</code>) look like?</p>
+</summary>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> res: Result&lt;(</span><span style="color:#adb7c9;">_</span><span style="color:#abb2bf;">, </span><span style="color:#adb7c9;">_</span><span style="color:#abb2bf;">), </span><span style="color:#adb7c9;">_</span><span style="color:#abb2bf;">&gt; </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">&#39;join: {
+</span><span style="color:#abb2bf;">	Ok(enjoin::join</span><span style="color:#adb7c9;">!</span><span style="color:#abb2bf;">(
+</span><span style="color:#abb2bf;">		{
+</span><span style="color:#abb2bf;">			</span><span style="color:#cd74e8;">match </span><span style="color:#5ebfcc;">do_something</span><span style="color:#abb2bf;">().await {
+</span><span style="color:#abb2bf;">				Ok(r) </span><span style="color:#adb7c9;">=&gt;</span><span style="color:#abb2bf;"> r,
+</span><span style="color:#abb2bf;">				Err(e) </span><span style="color:#adb7c9;">=&gt; </span><span style="color:#cd74e8;">break &#39;join </span><span style="color:#abb2bf;">Err(e),
+</span><span style="color:#abb2bf;">			}
+</span><span style="color:#abb2bf;">		},
+</span><span style="color:#abb2bf;">		{
+</span><span style="color:#abb2bf;">			</span><span style="color:#5ebfcc;">do_work</span><span style="color:#abb2bf;">().await;
+</span><span style="color:#abb2bf;">			</span><span style="color:#db9d63;">123
+</span><span style="color:#abb2bf;">		}
+</span><span style="color:#abb2bf;">	))
+</span><span style="color:#abb2bf;">};
+</span></code></pre>
+<p>But remember that <em>enjoin</em> supports the <code>?</code> operator, so in many cases you could simply use <code>?</code> inside join and have error propagation without any extra effort.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">async </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">fetch_and_save</span><span style="color:#abb2bf;">() -&gt; Result&lt;(), Error&gt; {
+</span><span style="color:#abb2bf;">    enjoin::join</span><span style="color:#adb7c9;">!</span><span style="color:#abb2bf;">(
+</span><span style="color:#abb2bf;">        {
+</span><span style="color:#abb2bf;">            </span><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> data </span><span style="color:#adb7c9;">= </span><span style="color:#5ebfcc;">fetch_data_1</span><span style="color:#abb2bf;">().await</span><span style="color:#adb7c9;">?</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">            </span><span style="color:#5ebfcc;">save_data</span><span style="color:#abb2bf;">(data).await</span><span style="color:#adb7c9;">?</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">        },
+</span><span style="color:#abb2bf;">        {
+</span><span style="color:#abb2bf;">            </span><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> data </span><span style="color:#adb7c9;">= </span><span style="color:#5ebfcc;">fetch_data_2</span><span style="color:#abb2bf;">().await</span><span style="color:#adb7c9;">?</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">            </span><span style="color:#5ebfcc;">save_data</span><span style="color:#abb2bf;">(data).await</span><span style="color:#adb7c9;">?</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">        }
+</span><span style="color:#abb2bf;">    );
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+</details>
+<p>With the shared mutable borrowing feature enabled, <em>enjoin</em> becomes yet more powerful, eclipsing even <code>futures::select!</code>. With <code>select!</code>, you attach synchronous code to run after each input future, and optionally break out from there. With <code>join_auto_borrow!</code>, you can chain synchronous and asynchronous code freely in each block, and break out at any time.</p>
+<h2 id="limitations">Limitations</h2>
+<p>The <em>enjoin</em> macro does a bit more than what macros were meant to do, so there are cases where it fails or falls short.</p>
+<ul>
+<li>
+<p>If branching statements and/or captured variables are hidden in another macro, <em>enjoin</em> wouldn't be able to transform them. This will usually cause compilation failure.</p>
+</li>
+<li>
+<p>If an <code>await</code> is hidden inside a macro, <code>join_auto_borrow!</code> won't be able to unlock the RefCell for the yieldpoint, leading to a RefCell panic.</p>
+</li>
+<li>
+<p>With only syntactic information, <em>enjoin</em> can only guess whether or not a name is a borrowed variable, and whether or not that borrow is mutable. We have heuristics, but even so the macro may end up RefCell-ing immutable borrows, constants, or function pointers.</p>
+</li>
+</ul>
+<h2 id="end">End</h2>
+<p>Discuss this post on <a rel="noopener nofollow" target="_blank" href="https://www.reddit.com/r/rust/comments/12lhayz/a_syntaxlevel_async_join_macro_supporting/">Reddit</a>.</p>
+<p>See <em>enjoin</em> on <a rel="noopener nofollow" target="_blank" href="https://github.com/wishawa/enjoin">GitHub</a>, <a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/enjoin">crates.io</a>, and <a rel="noopener nofollow" target="_blank" href="https://docs.rs/enjoin">docs.rs</a>.</p>
+
+          </div>
+        </article>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+  
+  
+  
+
+  
+
+
+  
+  
+
+<!--section class="section pt-0">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8 is-offset-2 mx-4">
+        <article class="box message p-0">
+          <div class="message-header">
+            Advertisement
+          </div>
+          <div class="message-body">
+            I'm looking for summer internships.
+            Please <a href="/">get in touch</a> if you're interested in hiring me!
+          </div>
+        <article>
+      </div>
+    </div>
+  </div>
+</section-->
+
+
+
+  
+  <footer class="footer py-4">    
+    <div class="content has-text-centered">
+      <p>
+        website powered by Zola + DeepThought theme
+      </p>
+    </div>
+  </footer>
+  
+
+  
+  
+  
+  <script src="https://wishawa.github.io/js/site.js"></script>
+
+  
+
+
+
+
+
+  
+  
+</body>
+
+</html>

@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+      <title>Wisha Wanichwecharungruang - Tech</title>
+        <link>https://wishawa.github.io</link>
+        <description></description>
+        <generator>Zola</generator>
+        <language>en</language>
+        <atom:link href="https://wishawa.github.io/categories/tech/rss.xml" rel="self" type="application/rss+xml"/>
+        <lastBuildDate>Sun, 09 Apr 2023 00:00:00 +0000</lastBuildDate>
+        
+        <item>
+            <title>A syntax-level async join macro supporting branching control flow and synchronous shared mutable borrowing</title>
+            <pubDate>Sun, 09 Apr 2023 00:00:00 +0000</pubDate>
+            <link>https://wishawa.github.io/posts/enjoin/</link>
+            <guid>https://wishawa.github.io/posts/enjoin/</guid>
+            <description>&lt;p&gt;The macro is called &lt;em&gt;enjoin&lt;&#x2F;em&gt;. It is &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;wishawa&#x2F;enjoin&quot;&gt;on GitHub here&lt;&#x2F;a&gt; and &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;enjoin&quot;&gt;on crates.io here&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;existing-join-implementations&quot;&gt;Existing join implementations&lt;&#x2F;h2&gt;
+&lt;p&gt;All the async join implementations out there
+(including
+&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;futures&#x2F;latest&#x2F;futures&#x2F;macro.join.html&quot;&gt;futures&#x27;&lt;&#x2F;a&gt;,
+&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;tokio&#x2F;latest&#x2F;tokio&#x2F;macro.join.html&quot;&gt;tokio&#x27;s&lt;&#x2F;a&gt;, &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;future&#x2F;macro.join.html&quot;&gt;nightly stdlib&#x27;s&lt;&#x2F;a&gt; and
+&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;futures-concurrency&#x2F;latest&#x2F;futures_concurrency&#x2F;future&#x2F;trait.Join.html&quot;&gt;futures-concurrency&lt;&#x2F;a&gt;)
+work on top of the &lt;em&gt;Future&lt;&#x2F;em&gt; abstraction; if you want to join pieces of async code, you pass them in as async blocks, which get converted to &lt;em&gt;Future&lt;&#x2F;em&gt; objects automatically.&lt;&#x2F;p&gt;
+&lt;p&gt;The problem is that &lt;strong&gt;async blocks are not simply blocks of async code&lt;&#x2F;strong&gt;. They behave much more like closures than blocks. Converting regular blocks of async code to async blocks means&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;We lose the ability to jump out with branching control flow (&lt;code&gt;break&lt;&#x2F;code&gt;&#x2F;&lt;code&gt;continue&lt;&#x2F;code&gt;).&lt;&#x2F;p&gt;
+  &lt;details&gt;
+  &lt;summary&gt;
+&lt;p&gt;Example code&lt;&#x2F;p&gt;
+  &lt;&#x2F;summary&gt;
+  &lt;b class=&quot;compile-fail-code-label has-text-danger&quot;&gt;
+	&lt;span class=&quot;icon&quot;&gt;
+		&lt;i class=&quot;fas fa-exclamation-circle&quot;&gt;&lt;&#x2F;i&gt;
+	&lt;&#x2F;span&gt;
+	this code does not compile
+&lt;&#x2F;b&gt;
+
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;loop &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	futures::join&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;!&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		async {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;should_break&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; [E0267]: `break` inside of an `async` block
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;break&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		},
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		async {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; ...
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+  &lt;&#x2F;details&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;Error propagation (with &lt;code&gt;?&lt;&#x2F;code&gt;) becomes more difficult.&lt;&#x2F;p&gt;
+  &lt;details&gt;
+  &lt;summary&gt;
+&lt;p&gt;Example code&lt;&#x2F;p&gt;
+  &lt;&#x2F;summary&gt;
+&lt;b class=&quot;compile-fail-code-label has-text-danger&quot;&gt;
+	&lt;span class=&quot;icon&quot;&gt;
+		&lt;i class=&quot;fas fa-exclamation-circle&quot;&gt;&lt;&#x2F;i&gt;
+	&lt;&#x2F;span&gt;
+	this code does not compile
+&lt;&#x2F;b&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;futures::join&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;!&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	async {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; [E0277]: the `?` operator can only be used in an async block that returns `Result` or `Option`
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;do_thing&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	},
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; ...
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+  &lt;&#x2F;details&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;a id=&quot;closure-lifetime-issue&quot;&gt;&lt;&#x2F;a&gt;All our variables&#x27; lifetimes get replaced by the opaque, encompassing lifetime of the async block. This same inconvenience &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;stackoverflow.com&#x2F;questions&#x2F;49703990&#x2F;cant-borrow-mutably-within-two-different-closures-in-the-same-scope&quot;&gt;frequently&lt;&#x2F;a&gt; &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;stackoverflow.com&#x2F;questions&#x2F;64947703&#x2F;a-variable-modified-by-two-closures&quot;&gt;comes&lt;&#x2F;a&gt; &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;users.rust-lang.org&#x2F;t&#x2F;is-there-a-nicer-way-to-have-two-closures-have-mutable-access-to-the-same-variable&#x2F;46311&quot;&gt;up&lt;&#x2F;a&gt; when working with closures.&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;syntax-level-join&quot;&gt;Syntax-level join&lt;&#x2F;h2&gt;
+&lt;p&gt;The first step to avoiding async blocks and the associated annoyances is to come up with a new API for concurrency. The &lt;em&gt;enjoin&lt;&#x2F;em&gt; library pretends not to operate on &lt;em&gt;Future&lt;&#x2F;em&gt; objects. The macro instead takes in regular blocks of code, and, as far as the user is concerned, magically run those blocks concurrently.&lt;&#x2F;p&gt;
+&lt;p&gt;Of course the actual implementation is not magic. The macro still secretly transforms the blocks into async blocks so they can be polled concurrently. What is special is that the transformation does much more than just adding the word &lt;code&gt;async&lt;&#x2F;code&gt;...&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;branching-statements&quot;&gt;Branching statements&lt;&#x2F;h3&gt;
+&lt;p&gt;To make branching statements (&lt;code&gt;break &#x27;_&lt;&#x2F;code&gt;, &lt;code&gt;continue &#x27;_&lt;&#x2F;code&gt;, &lt;code&gt;?&lt;&#x2F;code&gt;, &lt;code&gt;return&lt;&#x2F;code&gt;) work from inside async blocks, we replace each of them with a statement to return a special enum variant. The polling code can then match the returned enum and perform the branching.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;shared-mutable-borrows&quot;&gt;Shared mutable borrows&lt;&#x2F;h3&gt;
+&lt;p&gt;We also let async blocks share mutable borrows as long as they don&#x27;t cross any await yieldpoint. This is done by parsing through all the blocks to find shared borrows, and putting all those in a RefCell. Each block being joined keeps the RefCell locked for itself during its synchronous execution, unlocking and relocking across yieldpoints. Since joining is concurrent rather than parallel, only one block can be executing synchronously at a time, so the RefCell will not panic (it can almost be an UnsafeCell - more on that in the &lt;a href=&quot;https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts&#x2F;enjoin&#x2F;#limitations&quot;&gt;limitations&lt;&#x2F;a&gt; section below).&lt;&#x2F;p&gt;
+&lt;details&gt;
+&lt;summary&gt;
+&lt;p&gt;Is automatic RefCell-ing horrible design?&lt;&#x2F;p&gt;
+&lt;&#x2F;summary&gt;
+&lt;p&gt;Indiscriminate automatic RefCell-ing is definitely horrible, but that isn&#x27;t what we&#x27;re doing here. What &lt;em&gt;enjoin&lt;&#x2F;em&gt; is doing is merely working around the issue mentioned &lt;a href=&quot;#closure-lifetime-issue&quot;&gt;above&lt;&#x2F;a&gt;. This workaround is completely internal; &lt;em&gt;enjoin&lt;&#x2F;em&gt; could &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;rust-lang.github.io&#x2F;wg-async&#x2F;vision&#x2F;submitted_stories&#x2F;status_quo&#x2F;barbara_wants_to_use_ghostcell.html&quot;&gt;switch to GhostCell in the future&lt;&#x2F;a&gt; and users won&#x27;t notice anything (in fact, being compatible with GhostCell is another indication that our use of RefCell is well under control).&lt;&#x2F;p&gt;
+&lt;p&gt;From the user&#x27;s perspective, &lt;em&gt;enjoin&lt;&#x2F;em&gt;&#x27;s borrowing behavior can be seen as an extremely twisted extension to non-lexical lifetimes: lifetime follows execution, not lexical scope; joinee blocks are executed in lockstep, so the borrow lifetimes follow that.&lt;&#x2F;p&gt;
+&lt;&#x2F;details&gt;
+&lt;p&gt;Since this feature has imperfect implementation (more about that &lt;a href=&quot;https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts&#x2F;enjoin&#x2F;#limitations&quot;&gt;below&lt;&#x2F;a&gt;), it is made optional. Use &lt;code&gt;enjoin::join_auto_borrow!&lt;&#x2F;code&gt; if you want it; use &lt;code&gt;enjoin::join!&lt;&#x2F;code&gt; if you don&#x27;t.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;try-join-race-try-race-and-select&quot;&gt;&lt;code&gt;try_join!&lt;&#x2F;code&gt;, &lt;code&gt;race!&lt;&#x2F;code&gt;, &lt;code&gt;try_race!&lt;&#x2F;code&gt;, and &lt;code&gt;select!&lt;&#x2F;code&gt;&lt;&#x2F;h2&gt;
+&lt;p&gt;A nice effect of having branching statements is that &lt;em&gt;enjoin&lt;&#x2F;em&gt; does not need to provide racing or fallible variants; such behaviors are already possible with &lt;code&gt;enjoin::join!&lt;&#x2F;code&gt;. Here&#x27;s an example use of &lt;em&gt;enjoin&lt;&#x2F;em&gt; for racing futures.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; res &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;&amp;#39;race: {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	enjoin::join&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;!&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		{ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;break &amp;#39;race &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;work_1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await },
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		{ &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;break &amp;#39;race &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;work_2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await }
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;};
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;details&gt;
+&lt;summary&gt;
+&lt;p&gt;What would fallible join (&lt;code&gt;try_join&lt;&#x2F;code&gt;) look like?&lt;&#x2F;p&gt;
+&lt;&#x2F;summary&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; res: Result&amp;lt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;_&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;_&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;), &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;_&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;&amp;#39;join: {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	Ok(enjoin::join&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;!&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;match &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;do_something&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				Ok(r) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;=&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; r,
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				Err(e) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;=&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;break &amp;#39;join &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;Err(e),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		},
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;do_work&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;123
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	))
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;};
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;But remember that &lt;em&gt;enjoin&lt;&#x2F;em&gt; supports the &lt;code&gt;?&lt;&#x2F;code&gt; operator, so in many cases you could simply use &lt;code&gt;?&lt;&#x2F;code&gt; inside join and have error propagation without any extra effort.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;fetch_and_save&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;() -&amp;gt; Result&amp;lt;(), Error&amp;gt; {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    enjoin::join&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;!&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; data &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;fetch_data_1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;save_data&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(data).await&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        },
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; data &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;fetch_data_2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;            &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;save_data&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(data).await&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;?&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        }
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    );
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;&#x2F;details&gt;
+&lt;p&gt;With the shared mutable borrowing feature enabled, &lt;em&gt;enjoin&lt;&#x2F;em&gt; becomes yet more powerful, eclipsing even &lt;code&gt;futures::select!&lt;&#x2F;code&gt;. With &lt;code&gt;select!&lt;&#x2F;code&gt;, you attach synchronous code to run after each input future, and optionally break out from there. With &lt;code&gt;join_auto_borrow!&lt;&#x2F;code&gt;, you can chain synchronous and asynchronous code freely in each block, and break out at any time.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;limitations&quot;&gt;Limitations&lt;&#x2F;h2&gt;
+&lt;p&gt;The &lt;em&gt;enjoin&lt;&#x2F;em&gt; macro does a bit more than what macros were meant to do, so there are cases where it fails or falls short.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;If branching statements and&#x2F;or captured variables are hidden in another macro, &lt;em&gt;enjoin&lt;&#x2F;em&gt; wouldn&#x27;t be able to transform them. This will usually cause compilation failure.&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;If an &lt;code&gt;await&lt;&#x2F;code&gt; is hidden inside a macro, &lt;code&gt;join_auto_borrow!&lt;&#x2F;code&gt; won&#x27;t be able to unlock the RefCell for the yieldpoint, leading to a RefCell panic.&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;
+&lt;p&gt;With only syntactic information, &lt;em&gt;enjoin&lt;&#x2F;em&gt; can only guess whether or not a name is a borrowed variable, and whether or not that borrow is mutable. We have heuristics, but even so the macro may end up RefCell-ing immutable borrows, constants, or function pointers.&lt;&#x2F;p&gt;
+&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;end&quot;&gt;End&lt;&#x2F;h2&gt;
+&lt;p&gt;Discuss this post on &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.reddit.com&#x2F;r&#x2F;rust&#x2F;comments&#x2F;12lhayz&#x2F;a_syntaxlevel_async_join_macro_supporting&#x2F;&quot;&gt;Reddit&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;See &lt;em&gt;enjoin&lt;&#x2F;em&gt; on &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;wishawa&#x2F;enjoin&quot;&gt;GitHub&lt;&#x2F;a&gt;, &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;enjoin&quot;&gt;crates.io&lt;&#x2F;a&gt;, and &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;enjoin&quot;&gt;docs.rs&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+</description>
+        </item>
+        
+        
+        <item>
+            <title>Six fun things to do with Rust operator overloading</title>
+            <pubDate>Thu, 19 Jan 2023 00:00:00 +0000</pubDate>
+            <link>https://wishawa.github.io/posts/fun-rust-operators/</link>
+            <guid>https://wishawa.github.io/posts/fun-rust-operators/</guid>
+            <description>&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts&#x2F;fun-rust-operators&#x2F;dot-product-pooh.jpg&quot; alt=&quot;Winnie the Pooh meme: the regular Pooh has at dot_product([1.2, 3.6, 2.2], [4.0, 5.0, 6.1]) while the suit one has [1.2, 3.6, 2.2] *dot* [4.0, 5.0, 6.1]&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;em&gt;I am &lt;strong&gt;not&lt;&#x2F;strong&gt; endorsing the code in this post.&lt;&#x2F;em&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;c-input-output&quot;&gt;C++ Input&#x2F;Output&lt;&#x2F;h2&gt;
+&lt;p&gt;Instead of&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;stdin&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;read_line&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; buffer).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;unwrap&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;();
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;Hello I am &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;{name}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;!!!&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;we can overload the shift operators on &lt;code&gt;cin&lt;&#x2F;code&gt; and &lt;code&gt;cout&lt;&#x2F;code&gt; to allow&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;cin &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;gt;&amp;gt; &amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; buffer;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;cout &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;Hello I am &amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;lt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; name &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;lt;&amp;lt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;!!!&amp;quot; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;lt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; endl;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;variadic-functions&quot;&gt;Variadic Functions&lt;&#x2F;h2&gt;
+&lt;p&gt;Instead of&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;std::cmp::max(x, y);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;[w, x, y, z].&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;into_iter&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;max&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;();
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;we can make&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; max+ is like std::cmp::max but better
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; it supports &amp;gt;2 arguments
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;max&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(x, y);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;max&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(w, x, y, z);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;more-concise-builders&quot;&gt;More Concise Builders&lt;&#x2F;h2&gt;
+&lt;p&gt;Here&#x27;s a more serious one. Builder pattern sometimes involve a lot of repeated method calls. Take for example this usage of the &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;seanmonstar&#x2F;warp&quot;&gt;warp web framework&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; hi &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;warp::path(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    .&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;and&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(warp::path::param())
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    .&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;and&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(warp::header(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;user-agent&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;))
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    .&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;map&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eb6772;&quot;&gt;param&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;: String, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#eb6772;&quot;&gt;agent&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;: String| {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        format!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;Hello &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;, whose agent is &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, param, agent)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    });
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;What if the API look like this instead?&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; hi &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;warp::path(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;warp::path::param()
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;warp::header(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;user-agent&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;gt;&amp;gt;	|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;param: String, agent: String&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			format!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;Hello &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;, whose agent is &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;{}&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, param, agent)
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		};
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;infix-functions&quot;&gt;Infix Functions&lt;&#x2F;h2&gt;
+&lt;p&gt;Instead of&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;x.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;pow&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(y);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;dot_product&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(a, b);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;cross&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(b.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;cross&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(c).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;cross&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(d))
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;we can make&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;^&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;pow&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;^&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; y;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;dot&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; b;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;cross&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;* &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(b &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;cross&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; c &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;cross&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; d);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rfcs&#x2F;issues&#x2F;1579&quot;&gt;Lots of people&lt;&#x2F;a&gt; wanted this!&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;doublefish&quot;&gt;Doublefish&lt;&#x2F;h2&gt;
+&lt;p&gt;&lt;code&gt;std::mem&lt;&#x2F;code&gt; provides these functions&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;size_of::&amp;lt;T&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;size_of_val&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;value);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Turbofish enthusiasts would enjoy &lt;code&gt;size_of&lt;&#x2F;code&gt; but not so much &lt;code&gt;size_of_val&lt;&#x2F;code&gt;, so let&#x27;s make our own improved version of &lt;code&gt;size_of_val&lt;&#x2F;code&gt; that&#x27;s more turbofishy&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;size_of::&amp;lt;T&amp;gt;();
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;size_of_val&amp;lt;&amp;lt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;value&amp;gt;&amp;gt;();
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;join-and-race&quot;&gt;Join and Race&lt;&#x2F;h2&gt;
+&lt;p&gt;Futures combinators can have short-circuiting behaviors&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; quit if any of the 3 errors
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(fut1, fut2, fut3).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;try_join&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; quit if any of the 3 succeeds
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(fut4, fut5, fut6).&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;race_ok&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;let&#x27;s communicate this through &lt;code&gt;&amp;amp;&lt;&#x2F;code&gt; and &lt;code&gt;|&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(TryJoin &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;gt;&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; fut1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; fut2 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; fut3).await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(RaceOk &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;gt;&amp;gt;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; fut4 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; fut5 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; fut6).await;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h1 id=&quot;useful-links&quot;&gt;Useful Links&lt;&#x2F;h1&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.reddit.com&#x2F;r&#x2F;rust&#x2F;comments&#x2F;10golkq&quot;&gt;Discuss this on Reddit&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;play.rust-lang.org&#x2F;?version=stable&amp;amp;mode=debug&amp;amp;edition=2021&amp;amp;gist=71da59351b0988249a69014e6b191353&quot;&gt;Playground&lt;&#x2F;a&gt; containing the implementations behind some of the code shown here&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;ops&#x2F;index.html&quot;&gt;std::ops docs&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;reference&#x2F;expressions.html#expression-precedence&quot;&gt;Rust operators precedence table&lt;&#x2F;a&gt;&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+</description>
+        </item>
+        
+        
+        <item>
+            <title>Scoped threads in Rust, and why its async counterpart would be unsound</title>
+            <pubDate>Tue, 01 Nov 2022 00:00:00 +0000</pubDate>
+            <link>https://wishawa.github.io/posts/thread-scoped-async/</link>
+            <guid>https://wishawa.github.io/posts/thread-scoped-async/</guid>
+            <description>&lt;p&gt;&lt;strong&gt;Disclamer&lt;&#x2F;strong&gt;: This post contains a lot of oversimplification.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;strong&gt;TL; DR&lt;&#x2F;strong&gt;: Scoped threads wait for threads to finish in a loop. Async version can&#x27;t wait until tasks are finished because futures can be ignored&#x2F;forgotten.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;fearless-concurrency-with-scoped-threads&quot;&gt;Fearless concurrency with scoped threads&lt;&#x2F;h2&gt;
+&lt;p&gt;No standard library API demonstrate Rust&#x27;s &lt;em&gt;Fearless Concurrency&lt;&#x2F;em&gt; motto better than &lt;code&gt;std::thread::scope&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Take a look at the example code from &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;nightly&#x2F;std&#x2F;thread&#x2F;fn.scope.html&quot;&gt;the documentation&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;vec![&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;3&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;];
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;thread::scope(|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eb6772;&quot;&gt;s&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;| {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;spawn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(|| {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello from the first scoped thread&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; We can borrow `a` here.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        dbg!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    });
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;spawn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(|| {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello from the second scoped thread&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; We can even mutably borrow `x` here,
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; because no other threads are using it.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;] &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;];
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    });
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello from the main thread&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;});
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; After the scope, we can modify and access our variables again:
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;push&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;We&#x27;re spawning two scoped threads that &lt;em&gt;borrow and modify the main thread&#x27;s data&lt;&#x2F;em&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;In other languages, borrowing and mutating between threads requires great care, and produces memory races if done even subtly wrong. You don&#x27;t have to worry about such issues in Rust; the Rust compiler prevents all memory race for you.&lt;&#x2F;p&gt;
+&lt;p&gt;Scoped threads was introduced in 2015. Unfortunately, that first version &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;rust&#x2F;issues&#x2F;24292&quot;&gt;was unsound&lt;&#x2F;a&gt; and had to be removed before Rust reached 1.0. Recently, the API was redesigned and had since been added to the standard library of Rust 1.63 (released August 2022) onward.&lt;&#x2F;p&gt;
+&lt;p&gt;Let&#x27;s examine how it works...&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;controlling-threads-lifetimes&quot;&gt;Controlling threads&#x27; lifetimes&lt;&#x2F;h2&gt;
+&lt;p&gt;Borrows in Rust have lifetimes. &lt;code&gt;thread::scope&lt;&#x2F;code&gt; allows your threads to borrow data from the main thread for a lifetime of &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;In the example code shown earlier, &lt;code&gt;&#x27;life&lt;&#x2F;code&gt; would be a segment in the code. Like this&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;vec![&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;3&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;];
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; ------------------+
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;                   |
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;   this is &amp;#39;life   |
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;                   |
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; ------------------+
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;push&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;To use scoped threads, you first create closures with lifetime not smaller than &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;. Rust&#x27;s usual lifetime rules apply here: within &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;, your closures can&#x27;t borrow things that someone else is mutating or mutate things that someone else is borrowing.&lt;&#x2F;p&gt;
+&lt;p&gt;The job of &lt;code&gt;thread::scope&lt;&#x2F;code&gt; is to spawn your closures into threads. The closures are only guaranteed to be valid within &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;, so these threads &lt;strong&gt;must start and end within &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;&lt;&#x2F;strong&gt;.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;vec![&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;3&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;];
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;my_closure_1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;|| { &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;* ... *&#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;};
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;my_closure_2 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;|| { &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;* ... *&#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;};
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;            start of &amp;#39;life
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; -------------------------------------
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;    -- spawn the closures here! --    
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;                                      
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;                 ...                  
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;                                      
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;   -- make sure they end by here --   
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; -------------------------------------
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;             end of &amp;#39;life
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;push&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The start part is easy enough: just spawn the closures! The end part is harder: &lt;code&gt;thread::scope&lt;&#x2F;code&gt; must ensure that the we don&#x27;t progress beyond &lt;code&gt;&#x27;life&lt;&#x2F;code&gt; before all the threads have finished.&lt;&#x2F;p&gt;
+&lt;p&gt;To accomplish this, &lt;code&gt;thread::scope&lt;&#x2F;code&gt; gives you a &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;stable&#x2F;std&#x2F;thread&#x2F;struct.Scope.html&quot;&gt;Scope&lt;&#x2F;a&gt; object called &lt;strong&gt;s&lt;&#x2F;strong&gt;. To spawn each closure, you do &lt;code&gt;s.spawn(closure)&lt;&#x2F;code&gt;. This spawns the closure into a thread, and &lt;em&gt;records the existence of that thread within&lt;&#x2F;em&gt; &lt;strong&gt;s&lt;&#x2F;strong&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Once all the threads have been spawned, &lt;code&gt;thread::scope&lt;&#x2F;code&gt; will go into &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;1.64.0&#x2F;src&#x2F;std&#x2F;thread&#x2F;scoped.rs.html#149&quot;&gt;an infinite loop&lt;&#x2F;a&gt;. It will only break from this loop once all the threads spawned by &lt;strong&gt;s&lt;&#x2F;strong&gt; have completed.&lt;&#x2F;p&gt;
+&lt;p&gt;At this point we know that all the spawned closures have been dropped. The work of &lt;code&gt;thread::scope&lt;&#x2F;code&gt; is done. It returns. We exit the lifetime &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;Overall, expanding &lt;code&gt;thread::scope&lt;&#x2F;code&gt; would give something like this&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;vec![&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;3&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;];
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;my_closure_1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;|| { &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;* ... *&#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;};
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;my_closure_2 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;|| { &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;* ... *&#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;};
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;           start of &amp;#39;life
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; --------------------------------------
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; s &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;* ... *&#x2F;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;spawn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(my_closure_1);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;spawn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(my_closure_2);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;while&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;num_remaining_threads&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;() &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;gt; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{}
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; --------------------------------------
+&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F;            end of &amp;#39;life
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;push&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;h2 id=&quot;async-version-of-scoped-threads&quot;&gt;Async version of scoped threads&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;what-s-a-future&quot;&gt;What&#x27;s a future?&lt;&#x2F;h3&gt;
+&lt;p&gt;A &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;future&#x2F;trait.Future.html&quot;&gt;future&lt;&#x2F;a&gt; is like a pausable closure. It gets &lt;em&gt;polled&lt;&#x2F;em&gt;, driving it to run some code. It then &lt;em&gt;pauses&lt;&#x2F;em&gt; to wait for something to happen. When that thing happens, the future gets polled again and runs more code...&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;what-s-a-task&quot;&gt;What&#x27;s a task?&lt;&#x2F;h3&gt;
+&lt;p&gt;Tasks are the async equivalent of threads. They are futures that have been placed under control of the &lt;em&gt;executor&lt;&#x2F;em&gt;. The executor will schedule and execute tasks, similar to how the OS schedule and execute threads.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;envisioning-scoped-tasks&quot;&gt;Envisioning scoped tasks&lt;&#x2F;h3&gt;
+&lt;p&gt;An async version of &lt;code&gt;thread::scope&lt;&#x2F;code&gt; would probably look something like this&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;vec![&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;, &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;3&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;];
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;scoped_tasks&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eb6772;&quot;&gt;s&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;| {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; spawn a task for the executor to run
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;spawn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(async { &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; &amp;lt;-- a future instead of a closure
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello from the first scoped task&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        dbg!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    });
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;spawn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(async {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello from the second scoped task&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;        x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;] &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; a[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;];
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    });
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;    println!(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;hello from the main future&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;}).await; &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; &amp;lt;-- note the await
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;a.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;push&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;4&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;It spawns futures as tasks instead of closures as threads. And note that we need to await it at the end.&lt;&#x2F;p&gt;
+&lt;p&gt;Those familiar with async Rust would notice that this looks very similar to &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;futures&#x2F;latest&#x2F;futures&#x2F;future&#x2F;fn.join.html&quot;&gt;joining futures&lt;&#x2F;a&gt;. Internally, though, it is different. By spawning the futures to the executor, we can &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.reddit.com&#x2F;r&#x2F;rust&#x2F;comments&#x2F;ym45s6&#x2F;comment&#x2F;iv1xt2r&#x2F;?utm_source=share&amp;amp;utm_medium=web2x&amp;amp;context=3&quot;&gt;get asymptotically better performance&lt;&#x2F;a&gt; compared to joining.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;unsoundness-of-scoped-tasks&quot;&gt;Unsoundness of scoped tasks&lt;&#x2F;h2&gt;
+&lt;p&gt;Unfortunately, &lt;code&gt;scoped_tasks&lt;&#x2F;code&gt; as envisioned provides an unsound API. How so? Let&#x27;s demonstrate by abusing the function step-by-step.&lt;&#x2F;p&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;First, we create a future &lt;code&gt;fut_1&lt;&#x2F;code&gt; that we want to spawn. Let&#x27;s assume the lifetime of &lt;code&gt;fut_1&lt;&#x2F;code&gt; ends at the same point as &lt;code&gt;&#x27;life&lt;&#x2F;code&gt; (i.e. &lt;code&gt;fut_1&lt;&#x2F;code&gt; must be dropped before &lt;code&gt;&#x27;life&lt;&#x2F;code&gt; ends).&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; fut_1 &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; async { &lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;* ... *&#x2F; &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;};
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;Then, let the lifetime &lt;code&gt;&#x27;life&lt;&#x2F;code&gt; start...&lt;&#x2F;p&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;We then call &lt;code&gt;scoped_tasks&lt;&#x2F;code&gt;. This is an async function, so it returns a future. Let&#x27;s call this future &lt;strong&gt;x&lt;&#x2F;strong&gt;.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; x &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;scoped_tasks&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#eb6772;&quot;&gt;s&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;| {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	s.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;spawn&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(fut_1);
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;});
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;Usually, we would now do &lt;code&gt;x.await&lt;&#x2F;code&gt; to let the future be polled to completion automatically.&lt;&#x2F;p&gt;
+&lt;p&gt;Instead, to demonstrate unsoundness, we will poll &lt;strong&gt;x&lt;&#x2F;strong&gt; manually.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; x.await; &amp;lt;-- what we usually do
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;x.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;poll&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;...&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;);
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;This will cause the future &lt;strong&gt;x&lt;&#x2F;strong&gt; to do work. In this case, it spawns &lt;code&gt;fut_1&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;The future &lt;strong&gt;x&lt;&#x2F;strong&gt; is now waiting for the spawned task of &lt;code&gt;fut_1&lt;&#x2F;code&gt; to complete. In the sync version, we would loop until the threads complete.&lt;&#x2F;p&gt;
+&lt;p&gt;In async Rust, running an idle infinite loop for a long time is a bad idea; it &amp;quot;blocks the executor&amp;quot;. Instead of looping, our future &lt;strong&gt;x&lt;&#x2F;strong&gt; must pause and wait to be polled again once the spawned tasks have completed.&lt;&#x2F;p&gt;
+&lt;p&gt;This is the critical step where the problem arises. Our future &lt;strong&gt;x&lt;&#x2F;strong&gt; pauses to wait, &lt;strong&gt;but there is nothing to guarantee that the rest of the program will respect x&#x27;s decision to pause!&lt;&#x2F;strong&gt; While &lt;strong&gt;x&lt;&#x2F;strong&gt; is paused, other parts of the program could do all sorts of things. There is no guarantee that the rest of the program would even honor &lt;strong&gt;x&lt;&#x2F;strong&gt;&#x27;s request to be polled again once the tasks have completed!&lt;&#x2F;p&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;That&#x27;s exactly how we&#x27;ll bring out the unsoundness. Instead of waiting and polling &lt;strong&gt;x&lt;&#x2F;strong&gt; again at the appropriate time, let&#x27;s just &lt;strong&gt;not care about x anymore&lt;&#x2F;strong&gt;. We&#x27;re not going to wait for the spawned task to complete. We&#x27;re not going to poll &lt;strong&gt;x&lt;&#x2F;strong&gt; again.&lt;&#x2F;p&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;Our code simply progresses forward to the end of &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;See the unsoundness? The future &lt;code&gt;fut_1&lt;&#x2F;code&gt; is only guaranteed to last within &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;. We have gone beyond the end of &lt;code&gt;&#x27;life&lt;&#x2F;code&gt;, yet the task of &lt;code&gt;fut_1&lt;&#x2F;code&gt; is still running in the executor. We&#x27;re running &lt;code&gt;fut_1&lt;&#x2F;code&gt; beyond it&#x27;s lifetime!&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;dealing-with-the-unsoundness&quot;&gt;Dealing with the unsoundness&lt;&#x2F;h2&gt;
+&lt;p&gt;First, it&#x27;s not so bad. As you can see, the process to bring out the unsoundness of scoped tasks is pretty contrived. The &amp;quot;manually poll &lt;strong&gt;x&lt;&#x2F;strong&gt;&amp;quot; step is not something you do in everyday code.&lt;&#x2F;p&gt;
+&lt;p&gt;Still, unsound is unsound. We can&#x27;t just expose &lt;code&gt;scoped_tasks&lt;&#x2F;code&gt; as a safe function and expect people to use it the correct way.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;alternative-solutions&quot;&gt;Alternative solutions&lt;&#x2F;h3&gt;
+&lt;p&gt;The easiest fix is to simply expose the function as unsafe, and document that user must not ignore the future returned from the function.&lt;&#x2F;p&gt;
+&lt;p&gt;Another solution is to make scoped tasks work more similarly to scoped threads, specifically by making it use a loop to wait. This is in essence the approach taken by the &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;async-scoped&quot;&gt;async-scoped crate&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;p&gt;But as mentioned, looping like this &amp;quot;blocks the executor&amp;quot; and removes many benefits of async. This can become a real issue if you need to use scoped tasks in many places, or if you are in an environment such as browser WASM, where blocking is totally unacceptable.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;new-approach-scoped-async-spawn&quot;&gt;New approach: scoped_async_spawn&lt;&#x2F;h3&gt;
+&lt;p&gt;&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts&#x2F;async-ui-intro&#x2F;&quot;&gt;Async UI&lt;&#x2F;a&gt; faces both of the aforementioned issues: it needs to spawn a task for every UI component, and also be able to run in the browser. To make Async UI work, I made &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;scoped-async-spawn&quot;&gt;scoped_async_spawn&lt;&#x2F;a&gt;, which uses &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;pin&#x2F;struct.Pin.html&quot;&gt;Pin&lt;&#x2F;a&gt; and runtime checks to make sure that the spawning future (the &lt;strong&gt;x&lt;&#x2F;strong&gt; in our example) can&#x27;t be ignored.&lt;&#x2F;p&gt;
+&lt;p&gt;The mechanism of scoped_async_spawn is a blog-post worth of content in itself, so I&#x27;ll make a separate post about it soon. Stay tuned!&lt;&#x2F;p&gt;
+&lt;p&gt;Discuss this post on &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.reddit.com&#x2F;r&#x2F;rust&#x2F;comments&#x2F;ym45s6&#x2F;blog_post_scoped_threads_in_rust_and_why_its&#x2F;&quot;&gt;Reddit&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+</description>
+        </item>
+        
+        
+        <item>
+            <title>Async UI: a Rust UI Library where Everything is a Future</title>
+            <pubDate>Tue, 04 Oct 2022 00:00:00 +0000</pubDate>
+            <link>https://wishawa.github.io/posts/async-ui-intro/</link>
+            <guid>https://wishawa.github.io/posts/async-ui-intro/</guid>
+            <description>&lt;p&gt;This blog post is intended for readers with some experiences in async Rust. It assumes you know what a &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;doc.rust-lang.org&#x2F;std&#x2F;future&#x2F;trait.Future.html&quot;&gt;Future&lt;&#x2F;a&gt; is!&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;what-is-async-ui&quot;&gt;What is Async UI?&lt;&#x2F;h2&gt;
+&lt;p&gt;Async UI is a &lt;strong&gt;proof-of-concept&lt;&#x2F;strong&gt; Rust UI library with backends for the web (HTML&#x2F;JS) and GTK 4.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;screenshots&quot;&gt;Screenshots&lt;&#x2F;h2&gt;
+&lt;p&gt;Todo List Demo &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;wishawa.github.io&#x2F;async_ui&#x2F;todomvc&quot;&gt;(interactive version here)&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts&#x2F;async-ui-intro&#x2F;web-todomvc.png&quot; alt=&quot;Todo List demo&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;GTK Hacker News Screenshot&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts&#x2F;async-ui-intro&#x2F;gtk-hackernews.png&quot; alt=&quot;GTK Hacker News screenshot&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;why-async-for-uis&quot;&gt;Why Async for UIs?&lt;&#x2F;h2&gt;
+&lt;p&gt;UI widgets are &lt;strong&gt;retained&lt;&#x2F;strong&gt;: they run some code, stay there and wait for some events (such as user interactions), and then run some more code to handle those events.&lt;&#x2F;p&gt;
+&lt;p&gt;Sync Rust cannot handle the &lt;em&gt;stay there and wait for some events&lt;&#x2F;em&gt; step in a clean way. Widgets can live for arbitrarily long, and sync Rust lifetimes cannot express that.&lt;&#x2F;p&gt;
+&lt;p&gt;Async Rust solves this problem: in async functions, lifetimes can span across await points, and await points may pause for however long we want. This allows us to express a widgets&#x27; lifetimes directly with Rust lifetimes. To do so, we represent components as async functions.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;widgets-are-futures&quot;&gt;Widgets are Futures&lt;&#x2F;h2&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;hello_world&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;() {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;text&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;Hello World!&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;]).await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Here &lt;code&gt;text&lt;&#x2F;code&gt; is a built-in component provided by the library.
+It is an async function. To render it you simply await it.
+The &lt;code&gt;hello_world&lt;&#x2F;code&gt; function we just made is also a component. To render it, just &lt;code&gt;hello_world().await&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;easily-compose-components&quot;&gt;Easily Compose Components&lt;&#x2F;h2&gt;
+&lt;p&gt;Modern UI programming is all about &lt;em&gt;composition&lt;&#x2F;em&gt; — encapsulating many child components in a single parent component.
+This is analogous to &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;futures&#x2F;latest&#x2F;futures&#x2F;future&#x2F;fn.join.html&quot;&gt;joining&lt;&#x2F;a&gt; futures: you join many child futures together to get one future that runs all the children in parallel.&lt;&#x2F;p&gt;
+&lt;p&gt;In Async UI, composition&#x2F;joining is done with &lt;em&gt;fragments&lt;&#x2F;em&gt;. A &lt;code&gt;Fragment&lt;&#x2F;code&gt; is a future that contains multiple widgets. When you await the Fragment, all the widgets in it are rendered.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;hello_world_2&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;() {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; create a Fragment
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;fragment&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;((
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; use the component we previously made!
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;hello_world&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; have a button beside it
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;button&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(ButtonProps {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			children: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;fragment&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;((
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;text&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;Say hello back&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;]),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			)),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			on_press: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;_ev: PressEvent&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				todo!();
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			},
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;..&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;Default::default()
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		})
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	)).await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Here, we are rendering the &amp;quot;Hello World!&amp;quot; and a button next to it. Inside the button we have the text &amp;quot;Say hello back&amp;quot;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;express-complex-ui-flows&quot;&gt;Express Complex UI Flows&lt;&#x2F;h2&gt;
+&lt;p&gt;Components being async functions makes writing UI flows as easy as writing code flows.&lt;&#x2F;p&gt;
+&lt;p&gt;With if&#x2F;else, loop&#x2F;break, and &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;futures-lite&#x2F;latest&#x2F;futures_lite&#x2F;future&#x2F;fn.race.html&quot;&gt;race&lt;&#x2F;a&gt;, you can describe complicated UI flows very intuitively.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;login_flow&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;() {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;loop &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(username, password) &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;login_form&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;().await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;if &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;check_login&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(username, password).await {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; Login successful!
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;break&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;else &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;race&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; Render the popup component.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;invalid_login_popup&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; Race with a future that will complete in 5 seconds.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; In 5 seconds, this future will &amp;quot;win&amp;quot; the race and cause
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; the popup future to be dropped, unmounting the popup.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;wait_5_seconds&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;()
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			).await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; Loop back to the login form!
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	}
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;The full code for this control flow example is available &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;wishawa&#x2F;async_ui&#x2F;blob&#x2F;main&#x2F;examples&#x2F;gtk-login-form&#x2F;src&#x2F;main.rs&quot;&gt;here&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;bring-your-own-reactivity&quot;&gt;Bring your own Reactivity&lt;&#x2F;h2&gt;
+&lt;p&gt;The core of Async UI doesn&#x27;t know anything about reactivity.
+It&#x27;s just async Rust! To communicate between your components, you can use channels (&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;async-channel&quot;&gt;async-channel&lt;&#x2F;a&gt; is a great crate), signals (&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;futures-signals&quot;&gt;futures-signals&lt;&#x2F;a&gt; is a great crate), or whatever works in async Rust.&lt;&#x2F;p&gt;
+&lt;p&gt;The built-in components for both Web and GTK support reactivity through a simple interface provided by the &lt;code&gt;observables&lt;&#x2F;code&gt; crate. The crate provides basic reactivity with: &lt;code&gt;ReactiveCell&amp;lt;T&amp;gt;&lt;&#x2F;code&gt;.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; style=&quot;background-color:#2b303b;color:#6c7079;&quot; class=&quot;language-rust &quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;async &lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;fn &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5cb3fa;&quot;&gt;counter&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;() {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; count &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; Like a RefCell that you can subscribe to!
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;let&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; count_string &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;ReactiveCell::new(count.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;to_string&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;());
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;fragment&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;((
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; When count_string changes, the text will change.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;text&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;count_string.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;as_observable&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;()),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;button&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(ButtonProps {
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			children: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;fragment&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;((
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;text&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color:#9acc76;&quot;&gt;&amp;quot;+&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;]),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			)),
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			on_press: &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;&lt;span style=&quot;color:#cd74e8;&quot;&gt;mut &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;|&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;_ev&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;| &lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;{
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;font-style:italic;color:#5f697a;&quot;&gt;&#x2F;&#x2F; Upon press, increment count and update the string accordingly.
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				count &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;+= &lt;&#x2F;span&gt;&lt;span style=&quot;color:#db9d63;&quot;&gt;1&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;				&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;*&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;count_string.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;borrow_mut&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;() &lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt; count.&lt;&#x2F;span&gt;&lt;span style=&quot;color:#5ebfcc;&quot;&gt;to_string&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;();
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			},
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;			&lt;&#x2F;span&gt;&lt;span style=&quot;color:#adb7c9;&quot;&gt;..&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;Default::default()
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;		})
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;	)).await;
+&lt;&#x2F;span&gt;&lt;span style=&quot;color:#abb2bf;&quot;&gt;}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;For advanced reactivity and state management, I&#x27;m not sure what model will fit best with Async UI yet. &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;x-bow&quot;&gt;X-Bow&lt;&#x2F;a&gt; is a state management library I&#x27;ve been experimenting with, and it seems to be working pretty well (I used it in the Todo App demoed above). &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;docs.rs&#x2F;futures&#x2F;latest&#x2F;futures&#x2F;stream&#x2F;trait.Stream.html&quot;&gt;Streams&lt;&#x2F;a&gt; and &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;rust-lang&#x2F;wg-async&#x2F;blob&#x2F;master&#x2F;rfc-drafts&#x2F;stream.md#lending-streams&quot;&gt;LendingStreams&lt;&#x2F;a&gt; are also potential solutions.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;take-advantage-of-the-async-ecosystem&quot;&gt;Take Advantage of the Async Ecosystem&lt;&#x2F;h2&gt;
+&lt;p&gt;Async UI is &amp;quot;&lt;strong&gt;just async Rust&lt;&#x2F;strong&gt;&amp;quot;, so it is very easy to use together with other Rust libraries.
+Under the hood, Async UI uses &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;crates.io&#x2F;crates&#x2F;async-executor&quot;&gt;async-executor&lt;&#x2F;a&gt; from the smol team. This is &lt;strong&gt;the same executor used by async-std&lt;&#x2F;strong&gt;, so anything that works on async-std should be compatible with Async UI. Our GTK Hacker News demo, for example, uses the &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;http-rs&#x2F;surf&quot;&gt;surf&lt;&#x2F;a&gt; crate to fetch data.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;end-notes&quot;&gt;End Notes&lt;&#x2F;h2&gt;
+&lt;p&gt;Async UI is &lt;strong&gt;still under development&lt;&#x2F;strong&gt;. The core idea is complete, but lots of work remain to be done on the built-in components.&lt;&#x2F;p&gt;
+&lt;p&gt;There&#x27;s a lot more to explain about the workings of the library. I&#x27;ll post more blog posts soon. Stay tuned!&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;wishawa&#x2F;async_ui&quot;&gt;GitHub repo for Async UI&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Discuss this post on &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;users.rust-lang.org&#x2F;t&#x2F;blog-post-async-ui-a-rust-ui-library-where-everything-is-a-future&#x2F;82256&quot;&gt;Rust Users&lt;&#x2F;a&gt;, &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.reddit.com&#x2F;r&#x2F;rust&#x2F;comments&#x2F;xvv49w&#x2F;async_ui_a_rust_ui_library_where_everything_is_a&#x2F;&quot;&gt;Reddit&lt;&#x2F;a&gt;, &lt;a rel=&quot;noopener nofollow&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;news.ycombinator.com&#x2F;item?id=33089131&quot;&gt;Hacker News&lt;&#x2F;a&gt;.&lt;&#x2F;p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

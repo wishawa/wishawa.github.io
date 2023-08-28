@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="manifest" href="/icons/site.webmanifest">
+  <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="/icons/favicon.ico">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="msapplication-config" content="/icons/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex">
+  
+  <meta http-equiv="refresh" content="0; url=https://wisha.page&#x2F;posts&#x2F;async-ui-intro&#x2F;">
+  
+
+
+
+  
+
+  
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.1/css/academicons.min.css" integrity="sha384-FIue+PI4SsI9XfHCz8dBLg33b0c1fMJgNU3X//L26FYbGnlSEfWmNT7zgWc2N9b6" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+  
+  <link id="style-light" href="https://wishawa.github.io/bulma_light.css" rel="stylesheet" media="not(prefers-color-scheme: dark)" />
+  <link id="style-dark" href="https://wishawa.github.io/bulma_dark.css" rel="stylesheet" media="(prefers-color-scheme: dark)" />
+  
+
+  <title>
+    
+Async UI: a Rust UI Library where Everything is a Future | Wisha Wanichwecharungruang
+
+  </title>
+
+  
+  
+  
+
+  
+
+
+</head>
+
+<body>
+  <nav aria-label="section navigation" role="navigation" class="floating-nav">
+      
+      
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;">
+        About
+      </a>
+      
+      <a class="nav-link has-text-weight-semibold" href="https:&#x2F;&#x2F;wishawa.github.io&#x2F;posts">
+        Posts
+      </a>
+      
+      
+      
+      <a class="nav-link" id="dark-mode" title="Switch theme">
+        <span class="icon">
+          <i class="fas fa-adjust"></i>
+        </span>
+      </a>
+  </nav>
+
+  
+  
+
+  
+<section class="section">
+  <div class="container">
+    <div class="columns">
+      <div class="column is-8 is-offset-2">
+        <article class="box">
+          <h1 class="title">
+            Async UI: a Rust UI Library where Everything is a Future
+          </h1>
+          <p class="subtitle">Lifetime-Friendly, Component-Based, Retained-Mode UI Powered by Async Rust</p>
+          <div class="columns is-multiline is-gapless">
+            <div class="column is-8">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="far fa-calendar-alt"></i>
+  </span>
+  <span><time datetime="2022-10-04">October 04, 2022</time></span>
+</span>
+
+            </div>
+            <div class="column is-4 has-text-right-desktop">
+              
+
+
+            </div>
+            <div class="column">
+              
+              
+<p>
+  Categories:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/categories/tech/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-cube"></i>
+      </span>
+      <span>Tech</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+            <div class="column has-text-right-desktop">
+              
+              
+<p>
+  Tags:
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/tags/async-ui/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>Async UI</span>
+    </span>
+  </a>
+  
+  <a class="has-text-info has-text-weight-semibold" href="https://wishawa.github.io/tags/rust/">
+    <span class="icon-text">
+      <span class="icon">
+        <i class="fas fa-tag"></i>
+      </span>
+      <span>Rust</span>
+    </span>
+  </a>
+  
+</p>
+
+              
+            </div>
+          </div>
+          <div class="content mt-2">
+            <p>This blog post is intended for readers with some experiences in async Rust. It assumes you know what a <a rel="noopener nofollow" target="_blank" href="https://doc.rust-lang.org/std/future/trait.Future.html">Future</a> is!</p>
+<h2 id="what-is-async-ui">What is Async UI?</h2>
+<p>Async UI is a <strong>proof-of-concept</strong> Rust UI library with backends for the web (HTML/JS) and GTK 4.</p>
+<h2 id="screenshots">Screenshots</h2>
+<p>Todo List Demo <a rel="noopener nofollow" target="_blank" href="https://wishawa.github.io/async_ui/todomvc">(interactive version here)</a></p>
+<p><img src="https://wishawa.github.io/posts/async-ui-intro/web-todomvc.png" alt="Todo List demo" /></p>
+<p>GTK Hacker News Screenshot</p>
+<p><img src="https://wishawa.github.io/posts/async-ui-intro/gtk-hackernews.png" alt="GTK Hacker News screenshot" /></p>
+<h2 id="why-async-for-uis">Why Async for UIs?</h2>
+<p>UI widgets are <strong>retained</strong>: they run some code, stay there and wait for some events (such as user interactions), and then run some more code to handle those events.</p>
+<p>Sync Rust cannot handle the <em>stay there and wait for some events</em> step in a clean way. Widgets can live for arbitrarily long, and sync Rust lifetimes cannot express that.</p>
+<p>Async Rust solves this problem: in async functions, lifetimes can span across await points, and await points may pause for however long we want. This allows us to express a widgets' lifetimes directly with Rust lifetimes. To do so, we represent components as async functions.</p>
+<h2 id="widgets-are-futures">Widgets are Futures</h2>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">async </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">hello_world</span><span style="color:#abb2bf;">() {
+</span><span style="color:#abb2bf;">	</span><span style="color:#5ebfcc;">text</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">[</span><span style="color:#9acc76;">&quot;Hello World!&quot;</span><span style="color:#abb2bf;">]).await;
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<p>Here <code>text</code> is a built-in component provided by the library.
+It is an async function. To render it you simply await it.
+The <code>hello_world</code> function we just made is also a component. To render it, just <code>hello_world().await</code>.</p>
+<h2 id="easily-compose-components">Easily Compose Components</h2>
+<p>Modern UI programming is all about <em>composition</em> — encapsulating many child components in a single parent component.
+This is analogous to <a rel="noopener nofollow" target="_blank" href="https://docs.rs/futures/latest/futures/future/fn.join.html">joining</a> futures: you join many child futures together to get one future that runs all the children in parallel.</p>
+<p>In Async UI, composition/joining is done with <em>fragments</em>. A <code>Fragment</code> is a future that contains multiple widgets. When you await the Fragment, all the widgets in it are rendered.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">async </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">hello_world_2</span><span style="color:#abb2bf;">() {
+</span><span style="color:#abb2bf;">	</span><span style="font-style:italic;color:#5f697a;">// create a Fragment
+</span><span style="color:#abb2bf;">	</span><span style="color:#5ebfcc;">fragment</span><span style="color:#abb2bf;">((
+</span><span style="color:#abb2bf;">		</span><span style="font-style:italic;color:#5f697a;">// use the component we previously made!
+</span><span style="color:#abb2bf;">		</span><span style="color:#5ebfcc;">hello_world</span><span style="color:#abb2bf;">(),
+</span><span style="color:#abb2bf;">		</span><span style="font-style:italic;color:#5f697a;">// have a button beside it
+</span><span style="color:#abb2bf;">		</span><span style="color:#5ebfcc;">button</span><span style="color:#abb2bf;">(ButtonProps {
+</span><span style="color:#abb2bf;">			children: </span><span style="color:#5ebfcc;">fragment</span><span style="color:#abb2bf;">((
+</span><span style="color:#abb2bf;">				</span><span style="color:#5ebfcc;">text</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">[</span><span style="color:#9acc76;">&quot;Say hello back&quot;</span><span style="color:#abb2bf;">]),
+</span><span style="color:#abb2bf;">			)),
+</span><span style="color:#abb2bf;">			on_press: </span><span style="color:#adb7c9;">&amp;</span><span style="color:#cd74e8;">mut </span><span style="color:#adb7c9;">|</span><span style="color:#abb2bf;">_ev: PressEvent</span><span style="color:#adb7c9;">| </span><span style="color:#abb2bf;">{
+</span><span style="color:#abb2bf;">				todo!();
+</span><span style="color:#abb2bf;">			},
+</span><span style="color:#abb2bf;">			</span><span style="color:#adb7c9;">..</span><span style="color:#abb2bf;">Default::default()
+</span><span style="color:#abb2bf;">		})
+</span><span style="color:#abb2bf;">	)).await;
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<p>Here, we are rendering the &quot;Hello World!&quot; and a button next to it. Inside the button we have the text &quot;Say hello back&quot;.</p>
+<h2 id="express-complex-ui-flows">Express Complex UI Flows</h2>
+<p>Components being async functions makes writing UI flows as easy as writing code flows.</p>
+<p>With if/else, loop/break, and <a rel="noopener nofollow" target="_blank" href="https://docs.rs/futures-lite/latest/futures_lite/future/fn.race.html">race</a>, you can describe complicated UI flows very intuitively.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">async </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">login_flow</span><span style="color:#abb2bf;">() {
+</span><span style="color:#abb2bf;">	</span><span style="color:#cd74e8;">loop </span><span style="color:#abb2bf;">{
+</span><span style="color:#abb2bf;">		</span><span style="color:#cd74e8;">let </span><span style="color:#abb2bf;">(username, password) </span><span style="color:#adb7c9;">= </span><span style="color:#5ebfcc;">login_form</span><span style="color:#abb2bf;">().await;
+</span><span style="color:#abb2bf;">		</span><span style="color:#cd74e8;">if </span><span style="color:#5ebfcc;">check_login</span><span style="color:#abb2bf;">(username, password).await {
+</span><span style="color:#abb2bf;">			</span><span style="font-style:italic;color:#5f697a;">// Login successful!
+</span><span style="color:#abb2bf;">			</span><span style="color:#cd74e8;">break</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">		}
+</span><span style="color:#abb2bf;">		</span><span style="color:#cd74e8;">else </span><span style="color:#abb2bf;">{
+</span><span style="color:#abb2bf;">			</span><span style="color:#5ebfcc;">race</span><span style="color:#abb2bf;">(
+</span><span style="color:#abb2bf;">				</span><span style="font-style:italic;color:#5f697a;">// Render the popup component.
+</span><span style="color:#abb2bf;">				</span><span style="color:#5ebfcc;">invalid_login_popup</span><span style="color:#abb2bf;">(),
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">				</span><span style="font-style:italic;color:#5f697a;">// Race with a future that will complete in 5 seconds.
+</span><span style="color:#abb2bf;">				</span><span style="font-style:italic;color:#5f697a;">// In 5 seconds, this future will &quot;win&quot; the race and cause
+</span><span style="color:#abb2bf;">				</span><span style="font-style:italic;color:#5f697a;">// the popup future to be dropped, unmounting the popup.
+</span><span style="color:#abb2bf;">				</span><span style="color:#5ebfcc;">wait_5_seconds</span><span style="color:#abb2bf;">()
+</span><span style="color:#abb2bf;">			).await;
+</span><span style="color:#abb2bf;">			</span><span style="font-style:italic;color:#5f697a;">// Loop back to the login form!
+</span><span style="color:#abb2bf;">		}
+</span><span style="color:#abb2bf;">	}
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<p>The full code for this control flow example is available <a rel="noopener nofollow" target="_blank" href="https://github.com/wishawa/async_ui/blob/main/examples/gtk-login-form/src/main.rs">here</a>.</p>
+<h2 id="bring-your-own-reactivity">Bring your own Reactivity</h2>
+<p>The core of Async UI doesn't know anything about reactivity.
+It's just async Rust! To communicate between your components, you can use channels (<a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/async-channel">async-channel</a> is a great crate), signals (<a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/futures-signals">futures-signals</a> is a great crate), or whatever works in async Rust.</p>
+<p>The built-in components for both Web and GTK support reactivity through a simple interface provided by the <code>observables</code> crate. The crate provides basic reactivity with: <code>ReactiveCell&lt;T&gt;</code>.</p>
+<pre data-lang="rust" style="background-color:#2b303b;color:#6c7079;" class="language-rust "><code class="language-rust" data-lang="rust"><span style="color:#abb2bf;">async </span><span style="color:#cd74e8;">fn </span><span style="color:#5cb3fa;">counter</span><span style="color:#abb2bf;">() {
+</span><span style="color:#abb2bf;">	</span><span style="color:#cd74e8;">let mut</span><span style="color:#abb2bf;"> count </span><span style="color:#adb7c9;">= </span><span style="color:#db9d63;">0</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">	</span><span style="font-style:italic;color:#5f697a;">// Like a RefCell that you can subscribe to!
+</span><span style="color:#abb2bf;">	</span><span style="color:#cd74e8;">let</span><span style="color:#abb2bf;"> count_string </span><span style="color:#adb7c9;">= </span><span style="color:#abb2bf;">ReactiveCell::new(count.</span><span style="color:#5ebfcc;">to_string</span><span style="color:#abb2bf;">());
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">	</span><span style="color:#5ebfcc;">fragment</span><span style="color:#abb2bf;">((
+</span><span style="color:#abb2bf;">		</span><span style="font-style:italic;color:#5f697a;">// When count_string changes, the text will change.
+</span><span style="color:#abb2bf;">		</span><span style="color:#5ebfcc;">text</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">count_string.</span><span style="color:#5ebfcc;">as_observable</span><span style="color:#abb2bf;">()),
+</span><span style="color:#abb2bf;">
+</span><span style="color:#abb2bf;">		</span><span style="color:#5ebfcc;">button</span><span style="color:#abb2bf;">(ButtonProps {
+</span><span style="color:#abb2bf;">			children: </span><span style="color:#5ebfcc;">fragment</span><span style="color:#abb2bf;">((
+</span><span style="color:#abb2bf;">				</span><span style="color:#5ebfcc;">text</span><span style="color:#abb2bf;">(</span><span style="color:#adb7c9;">&amp;</span><span style="color:#abb2bf;">[</span><span style="color:#9acc76;">&quot;+&quot;</span><span style="color:#abb2bf;">]),
+</span><span style="color:#abb2bf;">			)),
+</span><span style="color:#abb2bf;">			on_press: </span><span style="color:#adb7c9;">&amp;</span><span style="color:#cd74e8;">mut </span><span style="color:#adb7c9;">|</span><span style="color:#abb2bf;">_ev</span><span style="color:#adb7c9;">| </span><span style="color:#abb2bf;">{
+</span><span style="color:#abb2bf;">				</span><span style="font-style:italic;color:#5f697a;">// Upon press, increment count and update the string accordingly.
+</span><span style="color:#abb2bf;">				count </span><span style="color:#adb7c9;">+= </span><span style="color:#db9d63;">1</span><span style="color:#abb2bf;">;
+</span><span style="color:#abb2bf;">				</span><span style="color:#adb7c9;">*</span><span style="color:#abb2bf;">count_string.</span><span style="color:#5ebfcc;">borrow_mut</span><span style="color:#abb2bf;">() </span><span style="color:#adb7c9;">=</span><span style="color:#abb2bf;"> count.</span><span style="color:#5ebfcc;">to_string</span><span style="color:#abb2bf;">();
+</span><span style="color:#abb2bf;">			},
+</span><span style="color:#abb2bf;">			</span><span style="color:#adb7c9;">..</span><span style="color:#abb2bf;">Default::default()
+</span><span style="color:#abb2bf;">		})
+</span><span style="color:#abb2bf;">	)).await;
+</span><span style="color:#abb2bf;">}
+</span></code></pre>
+<p>For advanced reactivity and state management, I'm not sure what model will fit best with Async UI yet. <a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/x-bow">X-Bow</a> is a state management library I've been experimenting with, and it seems to be working pretty well (I used it in the Todo App demoed above). <a rel="noopener nofollow" target="_blank" href="https://docs.rs/futures/latest/futures/stream/trait.Stream.html">Streams</a> and <a rel="noopener nofollow" target="_blank" href="https://github.com/rust-lang/wg-async/blob/master/rfc-drafts/stream.md#lending-streams">LendingStreams</a> are also potential solutions.</p>
+<h2 id="take-advantage-of-the-async-ecosystem">Take Advantage of the Async Ecosystem</h2>
+<p>Async UI is &quot;<strong>just async Rust</strong>&quot;, so it is very easy to use together with other Rust libraries.
+Under the hood, Async UI uses <a rel="noopener nofollow" target="_blank" href="https://crates.io/crates/async-executor">async-executor</a> from the smol team. This is <strong>the same executor used by async-std</strong>, so anything that works on async-std should be compatible with Async UI. Our GTK Hacker News demo, for example, uses the <a rel="noopener nofollow" target="_blank" href="https://github.com/http-rs/surf">surf</a> crate to fetch data.</p>
+<h2 id="end-notes">End Notes</h2>
+<p>Async UI is <strong>still under development</strong>. The core idea is complete, but lots of work remain to be done on the built-in components.</p>
+<p>There's a lot more to explain about the workings of the library. I'll post more blog posts soon. Stay tuned!</p>
+<p><a rel="noopener nofollow" target="_blank" href="https://github.com/wishawa/async_ui">GitHub repo for Async UI</a></p>
+<p>Discuss this post on <a rel="noopener nofollow" target="_blank" href="https://users.rust-lang.org/t/blog-post-async-ui-a-rust-ui-library-where-everything-is-a-future/82256">Rust Users</a>, <a rel="noopener nofollow" target="_blank" href="https://www.reddit.com/r/rust/comments/xvv49w/async_ui_a_rust_ui_library_where_everything_is_a/">Reddit</a>, <a rel="noopener nofollow" target="_blank" href="https://news.ycombinator.com/item?id=33089131">Hacker News</a>.</p>
+
+          </div>
+        </article>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+  
+  
+  
+
+  
+
+
+  
+  
+
+<!--section class="section pt-0">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8 is-offset-2 mx-4">
+        <article class="box message p-0">
+          <div class="message-header">
+            Advertisement
+          </div>
+          <div class="message-body">
+            I'm looking for summer internships.
+            Please <a href="/">get in touch</a> if you're interested in hiring me!
+          </div>
+        <article>
+      </div>
+    </div>
+  </div>
+</section-->
+
+
+
+  
+  <footer class="footer py-4">    
+    <div class="content has-text-centered">
+      <p>
+        website powered by Zola + DeepThought theme
+      </p>
+    </div>
+  </footer>
+  
+
+  
+  
+  
+  <script src="https://wishawa.github.io/js/site.js"></script>
+
+  
+
+
+
+
+
+  
+  
+</body>
+
+</html>
