@@ -16,6 +16,10 @@
   <meta name="msapplication-TileColor" content="#da532c">
   <meta name="msapplication-config" content="/icons/browserconfig.xml">
   <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex">
+  {% if current_path %}
+  <meta http-equiv="refresh" content="0; url=https://wisha.page{{ current_path }}">
+  {% endif %}
 
 
 
